@@ -20,6 +20,7 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
@@ -28,6 +29,7 @@ import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.internal.LoggerFactory;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
@@ -41,7 +43,11 @@ import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
+
+
 public class HttpHandlerAspect {
+
+    private static final Logger logger = Logger.getLogger(HttpHandlerAspect.class.getName());
 
     @Shim("com.sun.net.httpserver.HttpExchange")
     public interface HttpExchange {
@@ -127,6 +133,11 @@ public class HttpHandlerAspect {
 
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
                 @Nullable HttpExchange exchange) {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("onBeforeCommon() - context: " + context + " , exchange: " + exchange);
+
             if (exchange == null) {
                 // seems nothing sensible to do here other than ignore
                 return null;

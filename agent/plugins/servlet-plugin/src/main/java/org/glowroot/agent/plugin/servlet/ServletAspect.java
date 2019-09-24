@@ -25,14 +25,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.glowroot.agent.plugin.api.Agent;
-import org.glowroot.agent.plugin.api.AuxThreadContext;
-import org.glowroot.agent.plugin.api.OptionalThreadContext;
-import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.*;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
-import org.glowroot.agent.plugin.api.TimerName;
-import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.internal.LoggerFactory;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
@@ -54,8 +50,12 @@ import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
 import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
 import org.glowroot.agent.plugin.servlet._.Strings;
 
+
+
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
+
+    //private static final Logger logger = Logger.getLogger(OptionalThreadContextImpl.class.getName());
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
@@ -124,6 +124,11 @@ public class ServletAspect {
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
                 @Nullable ServletRequest req, @Nullable String transactionTypeOverride,
                 RequestInvoker requestInvoker) {
+
+            //ADDED
+//            logger.info("******************************************************************************");
+//            logger.info("onBeforeCommon(): tracevisitor: {}, req: {}, transactionTypeOverride: {}", context, req, transactionTypeOverride);
+
             if (context.getServletRequestInfo() != null) {
                 return null;
             }

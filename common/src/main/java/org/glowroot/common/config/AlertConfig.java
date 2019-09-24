@@ -30,9 +30,13 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Value.Immutable
 public abstract class AlertConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(AlertConfig.class);
 
     public abstract AlertCondition condition();
     public abstract AlertSeverity severity();
@@ -203,6 +207,10 @@ public abstract class AlertConfig {
                         .setMetric(condition.metric());
         builder.setTransactionType(Strings.nullToEmpty(condition.transactionType()))
                 .setTransactionName(Strings.nullToEmpty(condition.transactionName()));
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("toProto() - condition.metric(): {}, condition.transactionType(): {}, condition.transactionName(): {}",
+                condition.metric(), Strings.nullToEmpty(condition.transactionType()), Strings.nullToEmpty(condition.transactionName()));
         Double percentile = condition.percentile();
         if (percentile != null) {
             builder.setPercentile(OptionalDouble.newBuilder().setValue(percentile));

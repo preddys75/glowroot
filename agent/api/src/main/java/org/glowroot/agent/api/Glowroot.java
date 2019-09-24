@@ -24,8 +24,12 @@ import org.glowroot.agent.api.internal.FwdGlowrootService;
 import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.api.internal.NopGlowrootService;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Glowroot {
+
+    private static final Logger logger = LoggerFactory.getLogger(Glowroot.class);
 
     private static final GlowrootService service = getGlowrootService();
 
@@ -40,6 +44,10 @@ public class Glowroot {
         Method method;
         try {
             method = clazz.getMethod("get");
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("getGlowrootService() - method to get service: {}",
+                    method);
             GlowrootServiceImpl impl = (GlowrootServiceImpl) method.invoke(null);
             if (impl == null) {
                 // the location stack trace of above call to GlowrootServiceHolder.get() will have
@@ -47,7 +55,11 @@ public class Glowroot {
                 // "Glowroot Agent API was called too early" along with the location stack trace
                 return NopGlowrootService.INSTANCE;
             } else {
-                return new FwdGlowrootService(impl);
+                FwdGlowrootService gsService = new FwdGlowrootService(impl);
+                /*ADDED*/
+                logger.info("********************************************************************************");
+                logger.info("getGlowrootService() - grService - method to get service.");
+                return gsService;
             }
         } catch (Exception e) {
             // this is unexpected
@@ -64,6 +76,10 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionType(@Nullable String transactionType) {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionType() -- transactionType: {}", transactionType);
         service.setTransactionType(transactionType);
     }
 
@@ -73,6 +89,9 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionName(@Nullable String transactionName) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionName() -- transactionName: {}", transactionName);
         service.setTransactionName(transactionName);
     }
 
@@ -82,6 +101,10 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionUser(@Nullable String user) {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionUser() -- transactionUser: {}", user);
         service.setTransactionUser(user);
     }
 
@@ -99,6 +122,9 @@ public class Glowroot {
      * {@code null} values are normalized to the empty string.
      */
     public static void addTransactionAttribute(String name, @Nullable String value) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("addTransactionAttribute() -- attrName: {}, attrVal: {}", name, value);
         service.addTransactionAttribute(name, value);
     }
 
@@ -113,6 +139,9 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionSlowThreshold() -- threshold: {}, timeUNit: {}", threshold, unit);
         service.setTransactionSlowThreshold(threshold, unit);
     }
 
@@ -127,6 +156,9 @@ public class Glowroot {
      * If there is no current transaction then this method does nothing.
      */
     public static void setTransactionOuter() {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionOuter()");
         service.setTransactionOuter();
     }
 }

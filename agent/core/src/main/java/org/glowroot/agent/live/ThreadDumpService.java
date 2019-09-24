@@ -51,6 +51,9 @@ class ThreadDumpService {
     }
 
     ThreadDump getThreadDump() {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("In getThreadDump()");
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         List<ThreadContextImpl> activeThreadContexts = getActiveThreadContexts();
         @Nullable

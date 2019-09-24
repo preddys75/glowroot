@@ -619,6 +619,9 @@ public class Transaction {
     }
 
     void setTransactionType(String transactionType, int priority) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionType() -- transactionType: {}, priority: {}", transactionType, priority);
         if (priority > transactionTypePriority && !transactionType.isEmpty()) {
             this.transactionType = transactionType;
             transactionTypePriority = priority;

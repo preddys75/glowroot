@@ -144,6 +144,13 @@ public class CentralCollector implements Collector {
     @Override
     public void init(List<File> confDirs, final Environment environment, AgentConfig agentConfig,
             final AgentConfigUpdater agentConfigUpdater) throws IOException {
+
+        /*ADDED*/
+        startupLogger.info("********************************************************************************");
+        startupLogger.info("init(): confDirs: {}, env: {}, agentConfig: {}, agentConfigUpdater: {}",
+                confDirs, environment, agentConfig, agentConfigUpdater);
+
+
         final String configSyncedAgentId;
         if (configReadOnly) {
             configSyncedAgentId = "";
@@ -161,6 +168,12 @@ public class CentralCollector implements Collector {
         centralConnection.asyncCallInit(new GrpcCall<InitResponse>() {
             @Override
             public void call(StreamObserver<InitResponse> responseObserver) {
+
+                /*ADDED*/
+                startupLogger.info("********************************************************************************");
+                startupLogger.info("InitMessage: {}, responseObserver {}",
+                        initMessage, responseObserver);
+
                 collectorServiceStub.collectInit(initMessage, responseObserver);
             }
             @Override
@@ -176,9 +189,23 @@ public class CentralCollector implements Collector {
                     startupLogger.warn("the central collector version is older than the agent"
                             + " version which could cause unpredictable issues");
                 }
+
+                /*ADDED*/
+                startupLogger.info("********************************************************************************");
+                startupLogger.info("In doWithResponse, Here is response from Collector: {}", response);
+
                 if (response.hasAgentConfig() && !configReadOnly) {
                     try {
+                        /*ADDED*/
+                        startupLogger.info("********************************************************************************");
+                        startupLogger.info("Here is retrieved config: '{}'", response.hasAgentConfig());
+
                         agentConfigUpdater.update(response.getAgentConfig());
+
+                        /*ADDED*/
+                        startupLogger.info("********************************************************************************");
+                        startupLogger.info("Here is agent config from response: '{}'", response.getAgentConfig());
+
                     } catch (IOException e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -431,13 +458,27 @@ public class CentralCollector implements Collector {
             @Override
             public void visitOverallAggregate(String transactionType,
                     List<String> sharedQueryTexts, Aggregate overallAggregate) {
+
+                //ADDED
+                logger.info("******************************************************************************");
+                logger.info("visitOverallAggregate(), transactionType: {}", transactionType);
+
                 for (String sharedQueryText : sharedQueryTexts) {
+
                     Aggregate.SharedQueryText aggregateSharedQueryText = sharedQueryTextLimiter
                             .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s);
+                    //ADDED
+                    logger.info("******************************************************************************");
+                    logger.info("visitOverallAggregate(), aggSharedQueryText: {}", sharedQueryText);
+
                     requestObserver.onNext(AggregateStreamMessage.newBuilder()
                             .setSharedQueryText(aggregateSharedQueryText)
                             .build());
                 }
+                //ADDED
+                logger.info("****End visitOverallAggregate()*************************************************");
+
+
                 requestObserver.onNext(AggregateStreamMessage.newBuilder()
                         .setOverallAggregate(OverallAggregate.newBuilder()
                                 .setTransactionType(transactionType)
@@ -449,7 +490,19 @@ public class CentralCollector implements Collector {
             public void visitTransactionAggregate(String transactionType,
                     String transactionName, List<String> sharedQueryTexts,
                     Aggregate transactionAggregate) {
+
+
+                //ADDED
+                logger.info("******************************************************************************");
+                logger.info("visitTransactionAggregate(), transactionType: {}, transactionName: {}", transactionType,transactionName);
+
+
                 for (String sharedQueryText : sharedQueryTexts) {
+
+                    //ADDED
+                    logger.info("******************************************************************************");
+                    logger.info("visitTransactionAggregate(), aggSharedQueryText: {}", sharedQueryText);
+
                     requestObserver.onNext(AggregateStreamMessage.newBuilder()
                             .setSharedQueryText(sharedQueryTextLimiter
                                     .buildAggregateSharedQueryText(sharedQueryText, fullTextSha1s))
@@ -477,8 +530,14 @@ public class CentralCollector implements Collector {
 
         @Override
         public void call(StreamObserver<EmptyMessage> responseObserver) {
+
+            //ADDED
+            logger.info("******************************************************************************");
+            logger.info("call(): observer, {}", responseObserver);
+
             StreamObserver<TraceStreamMessage> requestObserver =
                     collectorServiceStub.collectTraceStream(responseObserver);
+
             requestObserver.onNext(TraceStreamMessage.newBuilder()
                     .setStreamHeader(TraceStreamHeader.newBuilder()
                             .setAgentId(agentId)
@@ -486,6 +545,12 @@ public class CentralCollector implements Collector {
                             .setUpdate(traceReader.update())
                             .setPostV09(true))
                     .build());
+
+            //ADDED
+            logger.info("******************************************************************************");
+            logger.info("agentId: {}, traceReader.traceId(): {}, traceReader.update(): {}",
+                    agentId, traceReader.traceId(), traceReader.update());
+
             // need to clear in case this is a retry
             fullTextSha1s.clear();
             TraceVisitorImpl traceVisitor = new TraceVisitorImpl(requestObserver, fullTextSha1s);

@@ -1,1 +1,6 @@
 target/
+**/*.iml
+**/*.settings
+**/*.project
+build.out
+.idea

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -254,6 +255,12 @@ public abstract class InstrumentationConfig {
     }
 
     public AgentConfig.InstrumentationConfig toProto() {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("toProto() - transactionType(): {}, className(): {}, methodName(): {}",
+                transactionType(), className(), methodName());
+
         AgentConfig.InstrumentationConfig.Builder builder =
                 AgentConfig.InstrumentationConfig.newBuilder()
                         .setClassName(className())

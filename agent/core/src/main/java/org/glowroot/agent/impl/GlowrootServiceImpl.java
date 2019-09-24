@@ -36,10 +36,19 @@ public class GlowrootServiceImpl {
     }
 
     public void setTransactionType(@Nullable String transactionType) {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionType() -- transactionType: {}", transactionType);
+
+
         if (Strings.isNullOrEmpty(transactionType)) {
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("transactionRegistry.getCurrentTransaction(): {}", transaction);
         if (transaction != null) {
             transaction.setTransactionType(transactionType, Priority.USER_API);
         }

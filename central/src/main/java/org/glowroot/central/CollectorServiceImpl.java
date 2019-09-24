@@ -135,6 +135,10 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             traceHeadline = "Collect init: {{0.agentId}}", timer = "init")
     @Override
     public void collectInit(InitMessage request, StreamObserver<InitResponse> responseObserver) {
+        //ADDED
+        logger.info("******************************************************************************");
+        logger.info("Incoming request, collectInit(): {}", request);
+
         String agentId = request.getAgentId();
         String v09AgentRollupId = request.getV09AgentRollupId();
         if (!v09AgentRollupId.isEmpty()) {
@@ -151,9 +155,19 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         AgentConfig updatedAgentConfig;
         try {
+            //ADDED
+            logger.info("********************************************************************************");
+            logger.info("Request.getAgentConfig(): {}", request.getAgentConfig());
+
             updatedAgentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
             updatedAgentConfig = agentConfigDao.store(agentId, updatedAgentConfig,
                     request.getOverwriteExistingAgentConfig());
+
+            //ADDED
+            logger.info("********************************************************************************");
+            logger.info("Request.getEnvironment(): {}", request.getEnvironment());
+
+
             environmentDao.store(agentId, request.getEnvironment());
             MoreFutures.waitForAll(activeAgentDao.insert(agentId, clock.currentTimeMillis()));
         } catch (Throwable t) {
@@ -165,11 +179,29 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
         InitResponse.Builder response = InitResponse.newBuilder()
                 .setGlowrootCentralVersion(version);
+
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("InitResponse.Builder response: {}", response);
+
         if (!updatedAgentConfig.equals(request.getAgentConfig())) {
             response.setAgentConfig(updatedAgentConfig);
         }
-        responseObserver.onNext(response.build());
+
+        InitResponse init_response = response.build();
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("InitResponse init_response: {}", init_response);
+
+        responseObserver.onNext(init_response);
         responseObserver.onCompleted();
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("Response observer post onCompleted(): {}", responseObserver);
+
+
     }
 
     @Override
@@ -599,6 +631,12 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 case OVERALL_AGGREGATE:
                     OverallAggregate overallAggregate = value.getOverallAggregate();
                     String transactionType = overallAggregate.getTransactionType();
+
+                    //ADDED
+                    logger.info("******************************************************************************");
+                    logger.info("onNextInternal: overallAggregate: {}: transactionType: {}", overallAggregate, transactionType);
+
+
                     aggregatesByTypeMap.put(transactionType, OldAggregatesByType.newBuilder()
                             .setTransactionType(transactionType)
                             .setOverallAggregate(overallAggregate.getAggregate()));

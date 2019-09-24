@@ -871,6 +871,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void setTransactionType(@Nullable String transactionType, int priority) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("setTransactionType() -- transactionType: {}, priority: {}", transactionType, priority);
         if (Strings.isNullOrEmpty(transactionType)) {
             return;
         }

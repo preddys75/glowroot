@@ -23,8 +23,13 @@ import org.immutables.value.Value;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Value.Immutable
 public abstract class TransactionConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionConfig.class);
 
     // 0 means mark all transactions as slow
     @Value.Default
@@ -49,11 +54,22 @@ public abstract class TransactionConfig {
     public abstract ImmutableList<ImmutableSlowThresholdOverride> slowThresholdOverrides();
 
     public AgentConfig.TransactionConfig toProto() {
+
+
         AgentConfig.TransactionConfig.Builder builder = AgentConfig.TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(of(slowThresholdMillis()))
                 .setProfilingIntervalMillis(of(profilingIntervalMillis()))
                 .setCaptureThreadStats(captureThreadStats());
         for (SlowThresholdOverride slowThresholdOverride : slowThresholdOverrides()) {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("toProto() - slowThresholdOverride.transactionType(): {}, slowThresholdOverride.transactionName(): {}",
+                    slowThresholdOverride.transactionType(), slowThresholdOverride.transactionName());
+
+
+
+
             builder.addSlowThresholdOverride(AgentConfig.SlowThresholdOverride.newBuilder()
                     .setTransactionType(slowThresholdOverride.transactionType())
                     .setTransactionName(slowThresholdOverride.transactionName())

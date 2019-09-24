@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.central.CentralCollector;
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
@@ -35,9 +36,13 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Styles.Private
 public class TraceCreator {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceCreator.class);
 
     private TraceCreator() {}
 
@@ -96,6 +101,9 @@ public class TraceCreator {
         builder.setStartTime(transaction.getStartTime());
         builder.setCaptureTime(captureTime);
         builder.setDurationNanos(captureTick - transaction.getStartTick());
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("createTraceHeader -> setTransactionType() -- transactionType: {}", transaction.getTransactionType());
         builder.setTransactionType(transaction.getTransactionType());
         builder.setTransactionName(transaction.getTransactionName());
         builder.setHeadline(transaction.getHeadline());
@@ -191,6 +199,9 @@ public class TraceCreator {
             // timings for traces that are still active are normalized to the capture tick in order
             // to *attempt* to present a picture of the trace at that exact tick
             // (without using synchronization to block updates to the trace while it is being read)
+            //ADDED
+            logger.info("******************************************************************************");
+            logger.info("accept(): tracevisitor: {}", traceVisitor);
             CountingEntryVisitorWrapper entryVisitorWrapper =
                     new CountingEntryVisitorWrapper(traceVisitor);
             transaction.visitEntries(captureTick, entryVisitorWrapper);
