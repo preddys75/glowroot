@@ -226,24 +226,54 @@ public class CentralCollector implements Collector {
     // collecting even when no aggregates since collection triggers transaction-based alerts
     @Override
     public void collectAggregates(AggregateReader aggregateReader) throws InterruptedException {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering collectAggregates()**************************************");
+        logger.info("AggregateReader aggregateReader: {}",aggregateReader);
+
+
         if (!SKIP_DELAY) {
             MILLISECONDS.sleep(nextAggregateDelayMillis);
         }
         centralConnection
                 .blockingCallWithAFewRetries(new CollectAggregatesGrpcCall(aggregateReader));
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting collectAggregates()**************************************");
+        logger.info("AggregateReader aggregateReader: {}",aggregateReader);
+
     }
 
     @Override
-    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws InterruptedException {
+    public void collectGaugeValues(final List<GaugeValue> gaugeValues) throws InterruptedException {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering collectGaugeValues()**************************************");
+        logger.info("***Printing list of List<GaugeValue> gaugeValues below");
+
+        for(GaugeValue gaugeValue : gaugeValues){
+            logger.info("********************************************************************************");
+            logger.info("*********Gauge value: {}******************", gaugeValue);
+        }
+
+
+
         final GaugeValueMessage gaugeValueMessage = GaugeValueMessage.newBuilder()
                 .setAgentId(agentId)
                 .addAllGaugeValue(gaugeValues)
                 .setPostV09(true)
                 .build();
+        //ADDED
+        logger.info("*********Gauge values combined message: {}", gaugeValueMessage);
         centralConnection.blockingCallWithAFewRetries(new GrpcCall<GaugeValueResponseMessage>() {
             @Override
             public void call(StreamObserver<GaugeValueResponseMessage> responseObserver) {
+                /*ADDED*/
+                logger.info("Response observer BEFORE collectorServiceStub.collectGaugeValues(): {}", responseObserver);
                 collectorServiceStub.collectGaugeValues(gaugeValueMessage, responseObserver);
+                logger.info("Response observer AFTER collectorServiceStub.collectGaugeValues(): {}", responseObserver);
             }
             @Override
             public void doWithResponse(GaugeValueResponseMessage response) {
@@ -253,6 +283,10 @@ public class CentralCollector implements Collector {
                             .setEnvironment(environment)
                             .setAgentConfig(configService.getAgentConfig())
                             .build();
+                    //ADDED
+                    logger.info("*********In doWithResponse() -> GaugeValueResponseMessage response: {}", response);
+                    //ADDED
+                    logger.info("*********Resending InitMessage in collectGaugeValues(: {}", initMessage);
                     // only once, since resendInit will continue to be sent back until it succeeds
                     centralConnection.asyncCallOnce(new GrpcCall<InitResponse>() {
                         @Override
@@ -263,10 +297,21 @@ public class CentralCollector implements Collector {
                 }
             }
         });
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting collectGaugeValues()**************************************");
+
     }
 
     @Override
     public void collectTrace(TraceReader traceReader) throws InterruptedException {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering collectTrace()**************************************");
+        logger.info("***TraceReader traceReader entering collectTrace -> {}", traceReader);
+
+
         if (traceReader.partial()) {
             // do not retry partial transactions since they are live and reading from the trace
             // reader will not be idempotent, so could lead to confusing results
@@ -274,10 +319,24 @@ public class CentralCollector implements Collector {
         } else {
             centralConnection.blockingCallWithAFewRetries(new CollectTraceGrpcCall(traceReader));
         }
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting collectTrace()**************************************");
+        logger.info("***TraceReader traceReader exiting collectTrace() -> {}", traceReader);
+        logger.info("********************************************************************************");
     }
 
     @Override
     public void log(LogEvent logEvent) throws InterruptedException {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering log()**************************************");
+        logger.info("***LogEvent logEvent -> {}", logEvent);
+
+
+
         if (centralConnection.suppressLogCollector()) {
             return;
         }
@@ -296,6 +355,10 @@ public class CentralCollector implements Collector {
                 collectorServiceStub.log(logMessage, responseObserver);
             }
         });
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting log()**************************************");
+        logger.info("***LogEvent logEvent -> {}", logEvent);
     }
 
     @OnlyUsedByTests

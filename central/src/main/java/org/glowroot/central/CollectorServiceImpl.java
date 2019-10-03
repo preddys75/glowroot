@@ -137,14 +137,23 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     public void collectInit(InitMessage request, StreamObserver<InitResponse> responseObserver) {
         //ADDED
         logger.info("******************************************************************************");
-        logger.info("Incoming request, collectInit(): {}", request);
+        logger.info("Incoming request, collectInit(): request -> {}", request);
+        logger.info("Incoming request, collectInit(): responseObserver -> {}", responseObserver);
 
         String agentId = request.getAgentId();
         String v09AgentRollupId = request.getV09AgentRollupId();
+
+        //ADDED
+        logger.info("******************************************************************************");
+        logger.info("agentId -> {}, v09AgentRollupId -> {}", agentId, v09AgentRollupId);
+
         if (!v09AgentRollupId.isEmpty()) {
             // handle agents prior to 0.10.0
             String v09AgentId = agentId;
             agentId = GrpcCommon.convertFromV09AgentRollupId(v09AgentRollupId) + v09AgentId;
+            //ADDED
+            logger.info("******************************************************************************");
+            logger.info("collectInit(): agentId = GrpcCommon.convertFromV09AgentRollupId(v09AgentRollupId) + v09AgentId -> {}", agentId);
             try {
                 v09AgentRollupDao.store(v09AgentId, v09AgentRollupId);
             } catch (Throwable t) {
@@ -175,7 +184,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             responseObserver.onError(t);
             return;
         }
-        logger.info("agent connected: {}, version {}", agentId,
+        logger.info("agent connected: {}, request.getEnvironment().getJavaInfo().getGlowrootAgentVersion() -> {}", agentId,
                 request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
         InitResponse.Builder response = InitResponse.newBuilder()
                 .setGlowrootCentralVersion(version);
@@ -184,6 +193,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         //ADDED
         logger.info("********************************************************************************");
         logger.info("InitResponse.Builder response: {}", response);
+        logger.info("updatedAgentConfig.equals(request.getAgentConfig(): {} <equals> ", updatedAgentConfig, request.getAgentConfig());
 
         if (!updatedAgentConfig.equals(request.getAgentConfig())) {
             response.setAgentConfig(updatedAgentConfig);
@@ -194,12 +204,23 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         logger.info("********************************************************************************");
         logger.info("InitResponse init_response: {}", init_response);
 
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("Response observer before onNext(): {}", responseObserver);
         responseObserver.onNext(init_response);
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("Response observer before onCompleted(): {}", responseObserver);
         responseObserver.onCompleted();
 
         //ADDED
         logger.info("********************************************************************************");
         logger.info("Response observer post onCompleted(): {}", responseObserver);
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("%%%%%%%%%%%%%%%%%%%%%%%End of CollectorServiceImpl.collectInit() %%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        logger.info("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 
 
     }
@@ -207,7 +228,18 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public StreamObserver<AggregateStreamMessage> collectAggregateStream(
             StreamObserver<AggregateResponseMessage> responseObserver) {
-        return new AggregateStreamObserver(responseObserver);
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collectAggregateStream()**************************************");
+        logger.info("ResponseObserver passed to method: {}", responseObserver);
+
+        AggregateStreamObserver retVal = new AggregateStreamObserver(responseObserver);
+        //ADDED
+        logger.info("Exiting collectAggregateStream(), AggregateStreamObserver created from responseObserver: {}", retVal);
+        logger.info("********************************************************************************");
+
+        return retVal;
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Aggregates",
@@ -215,22 +247,47 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectAggregates(OldAggregateMessage request,
             StreamObserver<AggregateResponseMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************In collectAggregates()**************************************");
+        logger.info("OldAggregateMessage passed to method, request=: {}", request);
+
+
         List<Aggregate.SharedQueryText> sharedQueryTexts;
         List<String> oldSharedQueryTexts = request.getOldSharedQueryTextList();
+
+        //ADDED
+        logger.info("List of oldSharedQueryTexts  retrieved from request, oldSharedQueryTexts=: {}", oldSharedQueryTexts);
+
         if (oldSharedQueryTexts.isEmpty()) {
             sharedQueryTexts = request.getSharedQueryTextList();
+            //ADDED
+            logger.info("oldSharedQueryTexts is Empty, setting sharedQueryTexts = request.getSharedQueryTextList(): -> {}",sharedQueryTexts);
+
         } else {
+            //ADDED
+            logger.info("oldSharedQueryTexts NOT Empty, adding it to NEW sharedQueryText List -> printed below:");
             // handle agents prior to 0.9.3
             sharedQueryTexts = new ArrayList<>();
             for (String oldSharedQueryText : oldSharedQueryTexts) {
+                //ADDED
+                logger.info("oldSharedQueryText -> {}", oldSharedQueryText);
                 sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
                         .setFullText(oldSharedQueryText)
                         .build());
             }
         }
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Calling throttleCollectAggregates()*************************************");
         throttleCollectAggregates(request.getAgentId(), false,
                 getFutureProofAggregateCaptureTime(request.getCaptureTime()),
                 sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver);
+
+        logger.info("*************Exiting collectAggregates()*************************************");
+        logger.info("********************************************************************************");
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Gauges",
@@ -238,13 +295,31 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectGaugeValues(GaugeValueMessage request,
             StreamObserver<GaugeValueResponseMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collectGaugeValues()*************************************");
+        logger.info("****GaugeValueMessage request: {}", request);
+        logger.info("****StreamObserver<GaugeValueResponseMessage> responseObserver: {}", responseObserver);
         throttledCollectGaugeValues(request, responseObserver);
+        logger.info("*************Exiting collectGaugeValues()************************************");
+        logger.info("********************************************************************************");
+
     }
 
     @Override
     public StreamObserver<TraceStreamMessage> collectTraceStream(
             StreamObserver<EmptyMessage> responseObserver) {
-        return new TraceStreamObserver(responseObserver);
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collectTraceStream()*************************************");
+        TraceStreamObserver retVal = new TraceStreamObserver(responseObserver);
+        logger.info("****StreamObserver<EmptyMessage> responseObserver: {}", responseObserver);
+        logger.info("*************Exiting collectTraceStream()************************************");
+        logger.info("********************************************************************************");
+
+        return retVal;
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Trace",
@@ -252,7 +327,17 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectTrace(OldTraceMessage request,
             StreamObserver<EmptyMessage> responseObserver) {
+
+        //ADDED
+        logger.info("----------------------------------------------------------------");
+        logger.info("********************************************************************************");
+        logger.info("Entering collectTrace(), agentId=<{}>, postV09 -> <{}>, traceId=<{}>", request.getAgentId(), false, request.getTrace());
+
         throttledCollectTrace(request.getAgentId(), false, request.getTrace(), responseObserver);
+
+        //ADDED
+        logger.info("*************Exiting collectTrace()************************************");
+        logger.info("********************************************************************************");
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Log",
@@ -260,6 +345,10 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
         String agentId;
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering log()*************************************");
+        logger.info("****LogMessage request: {}", request);
         try {
             agentId = grpcCommon.getAgentId(request.getAgentId(), request.getPostV09());
         } catch (Throwable t) {
@@ -287,14 +376,45 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             responseObserver.onError(t);
             return;
         }
+        //ADDED logging
+        logger.info("****StreamObserver<EmptyMessage> responseObserver BEFORE responseObserver.onNext(): {}", responseObserver);
+        logger.info("*************************************************");
         responseObserver.onNext(EmptyMessage.getDefaultInstance());
         responseObserver.onCompleted();
+        logger.info("****StreamObserver<EmptyMessage> responseObserver AFTER responseObserver.onCompleted(): {}", responseObserver);
+        logger.info("*************Exiting log()************************************");
+        logger.info("********************************************************************************");
     }
 
     private void throttleCollectAggregates(String agentId, boolean postV09, long captureTime,
             List<Aggregate.SharedQueryText> sharedQueryTexts,
             List<OldAggregatesByType> aggregatesByTypeList,
             StreamObserver<AggregateResponseMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("----------------------------------------------------------------");
+        logger.info("Entering throttleCollectAggregates(), agentId=<{}>, postV09 -> <{}>, captureTime=<{}>", agentId, postV09, captureTime);
+
+
+        //ADDED
+        logger.info("Logging shared query texts");
+        for (Aggregate.SharedQueryText sharedQueryText : sharedQueryTexts) {
+            //ADDED
+            logger.info("shared query text -> {}", sharedQueryText);
+        }
+
+        //ADDED
+        logger.info("----------------------------------------------------------------");
+        logger.info("Logging List<OldAggregatesByType> aggregatesByTypeList");
+        for ( OldAggregatesByType aggregatesByTypeObj :  aggregatesByTypeList) {
+            //ADDED
+            logger.info("aggregatesByTypeObj -> {}", aggregatesByTypeObj);
+        }
+
+
+        //ADDED
+        logger.info("--Calling throttle()----------------------------------------------");
         throttle(agentId, postV09, "aggregate", responseObserver, new Runnable() {
             @Override
             public void run() {
@@ -302,10 +422,20 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         aggregatesByTypeList, responseObserver);
             }
         });
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("----------------------------------------------------------------");
+        logger.info("Exiting throttleCollectAggregates(), agentId=<{}>, postV09 -> <{}>, captureTime=<{}>", agentId, postV09, captureTime);
     }
 
     private void throttledCollectGaugeValues(GaugeValueMessage request,
             StreamObserver<GaugeValueResponseMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering throttledCollectGaugeValues()*************************************");
+        logger.info("****GaugeValueMessage request: {}", request);
+        logger.info("--Calling throttle()----------------------------------------------");
         throttle(request.getAgentId(), request.getPostV09(), "gauge value", responseObserver,
                 new Runnable() {
                     @Override
@@ -313,20 +443,44 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         collectGaugeValuesUnderThrottle(request, responseObserver);
                     }
                 });
+        //ADDED
+        logger.info("****StreamObserver<GaugeValueResponseMessage> responseObserver: {}", responseObserver);
+        logger.info("*************Exiting throttledCollectGaugeValues()************************************");
+        logger.info("********************************************************************************");
+
     }
 
     private void throttledCollectTrace(String agentId, boolean postV09, Trace trace,
             StreamObserver<EmptyMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering throttledCollectTrace()*************************************");
+        logger.info("****agentId=<{}>, postV09=<{}>, trace -> {}", agentId, postV09, trace);
+        logger.info("--Calling throttle()----------------------------------------------");
+
+
         throttle(agentId, postV09, "trace", responseObserver, new Runnable() {
             @Override
             public void run() {
                 collectTraceUnderThrottle(agentId, postV09, trace, responseObserver);
             }
         });
+        //ADDED
+        logger.info("****StreamObserver<EmptyMessage> responseObserver: {}", responseObserver);
+        logger.info("*************Exiting throttledCollectTrace()************************************");
+        logger.info("********************************************************************************");
     }
 
     private <T> void throttle(String agentId, boolean postV09, String collectionType,
             StreamObserver<T> responseObserver, Runnable runnable) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering throttle()*************************************");
+        logger.info("****agentId=<{}>, postV09=<{}>, collectionType=<{}>", agentId, postV09, collectionType);
+        logger.info("*************Will attempt to obtain semaphore and then kick off thread***********");
+
         Semaphore semaphore = throttlePerAgentId.getUnchecked(agentId);
         boolean acquired;
         try {
@@ -346,15 +500,43 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         try {
             runnable.run();
+            logger.info("*************Kicked off thread in throttle()*******************************");
         } finally {
             semaphore.release();
         }
+        //ADDED
+        logger.info("****StreamObserver<T> responseObserver: {}", responseObserver);
+        logger.info("*************Exiting throttle()************************************");
+        logger.info("********************************************************************************");
     }
 
     private void collectAggregatesUnderThrottle(String agentId, boolean postV09, long captureTime,
             List<Aggregate.SharedQueryText> sharedQueryTexts,
             List<OldAggregatesByType> aggregatesByTypeList,
             StreamObserver<AggregateResponseMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collectAggregatesUnderThrottle()*************************************");
+        logger.info("****agentId=<{}>, postV09=<{}>, captureTime=<{}>", agentId, postV09, captureTime);
+
+
+        //ADDED
+        logger.info("Logging shared query texts");
+        for (Aggregate.SharedQueryText sharedQueryText : sharedQueryTexts) {
+            //ADDED
+            logger.info("shared query text -> {}", sharedQueryText);
+        }
+
+        //ADDED
+        logger.info("----------------------------------------------------------------");
+        logger.info("Logging List<OldAggregatesByType> aggregatesByTypeList");
+        for ( OldAggregatesByType aggregatesByTypeObj :  aggregatesByTypeList) {
+            //ADDED
+            logger.info("aggregatesByTypeObj -> {}", aggregatesByTypeObj);
+        }
+
+
         String postV09AgentId;
         try {
             postV09AgentId = grpcCommon.getAgentId(agentId, postV09);
@@ -386,15 +568,32 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             // probably shutdown requested
             logger.debug(e.getMessage(), e);
         }
+        //ADDED
+        //ADDED
+        logger.info("****StreamObserver<AggregateResponseMessage> responseObserver BEFORE responseObserver.onNext(): {}", responseObserver);
+        logger.info("*************************************************");
         responseObserver.onNext(AggregateResponseMessage.newBuilder()
                 .setNextDelayMillis(getNextDelayMillis())
                 .build());
         responseObserver.onCompleted();
+        logger.info("****StreamObserver<AggregateResponseMessage> responseObserver AFTER responseObserver.onCompleted(): {}", responseObserver);
+        logger.info("*************Exiting collectAggregatesUnderThrottle()************************************");
+        logger.info("********************************************************************************");
+
+
     }
 
     private void collectGaugeValuesUnderThrottle(GaugeValueMessage request,
             StreamObserver<GaugeValueResponseMessage> responseObserver) {
         String postV09AgentId;
+
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collectGaugeValuesUnderThrottle()*************************************");
+        logger.info("****request {}", request);
+
+
         try {
             postV09AgentId = grpcCommon.getAgentId(request.getAgentId(), request.getPostV09());
         } catch (Throwable t) {
@@ -448,14 +647,31 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
             resendInit = false;
         }
+
+        //ADDED
+        logger.info("****StreamObserver<GaugeValueResponseMessage> responseObserver BEFORE responseObserver.onNext(): {}", responseObserver);
+        logger.info("*************************************************");
         responseObserver.onNext(GaugeValueResponseMessage.newBuilder()
                 .setResendInit(resendInit)
                 .build());
         responseObserver.onCompleted();
+        logger.info("****StreamObserver<GaugeValueResponseMessage> responseObserver AFTER responseObserver.onCompleted(): {}", responseObserver);
+        logger.info("*************Exiting collectGaugeValuesUnderThrottle()************************************");
+        logger.info("********************************************************************************");
+
+
     }
 
     private void collectTraceUnderThrottle(String agentId, boolean postV09, Trace trace,
             StreamObserver<EmptyMessage> responseObserver) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collectTraceUnderThrottle()*************************************");
+        logger.info("****agentId=<{}>, postV09=<{}>, trace -> {}", agentId, postV09, trace);
+
+
+
         String postV09AgentId;
         try {
             postV09AgentId = grpcCommon.getAgentId(agentId, postV09);
@@ -471,8 +687,15 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             responseObserver.onError(t);
             return;
         }
+
+        //ADDED
+        logger.info("****StreamObserver<EmptyMessage> responseObserver BEFORE responseObserver.onNext(): {}", responseObserver);
+        logger.info("*************************************************");
         responseObserver.onNext(EmptyMessage.getDefaultInstance());
         responseObserver.onCompleted();
+        logger.info("****StreamObserver<EmptyMessage> responseObserver AFTER responseObserver.onCompleted(): {}", responseObserver);
+        logger.info("*************Exiting collectTraceUnderThrottle()************************************");
+        logger.info("********************************************************************************");
     }
 
     private long getFutureProofAggregateCaptureTime(long captureTime) {
