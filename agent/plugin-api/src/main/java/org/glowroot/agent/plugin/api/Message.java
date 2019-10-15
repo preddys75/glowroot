@@ -46,6 +46,9 @@ import org.glowroot.agent.plugin.api.util.Optional;
  */
 public abstract class Message {
 
+
+    private static final Logger logger = Logger.getLogger(Message.class);
+
     private static final int MESSAGE_CHAR_LIMIT =
             Integer.getInteger("glowroot.message.char.limit", 100000);
 
@@ -85,6 +88,10 @@ public abstract class Message {
 
         private MessageImpl(@Nullable String template, @Nullable String[] args,
                 Map<String, ?> detail) {
+
+            //ADDED
+            logger.info("************Entering MessageImpl()***********************");
+            
             this.template = truncateMessageIfNeeded(template);
             for (int i = 0; i < args.length; i++) {
                 args[i] = truncateMessageIfNeeded(args[i]);
@@ -94,7 +101,20 @@ public abstract class Message {
                 this.detail = truncateDetail(detail);
             } else {
                 this.detail = detail;
+            }           
+            
+            //ADDED
+            logger.info("Output of getText():\n {}", getText());
+            logger.info("Output of getDetail():*****************");
+
+            Map<String, ?> toPrint = getDetail();
+            if(toPrint != null){
+                for(String key1 : toPrint.keySet()){
+                    logger.info("Key: {}, Value: {}", key1, toPrint.get(key1));
+                }
             }
+
+            logger.info("************Exiting MessageImpl()***********************");
         }
 
         @Override
@@ -132,6 +152,17 @@ public abstract class Message {
 
         @Override
         public Map<String, ?> getDetail() {
+
+            logger.info("************Entering getDetail()***********************");
+            
+            if(detail != null){
+                for(String key1 : detail.keySet()){
+                    logger.info("Key: {}, Value: {}", key1, detail.get(key1));
+                }
+            }
+
+            logger.info("************Exiting getDetail()***********************");
+            
             return detail;
         }
 

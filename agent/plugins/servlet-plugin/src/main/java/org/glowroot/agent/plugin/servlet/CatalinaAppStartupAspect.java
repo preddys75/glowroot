@@ -28,9 +28,13 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.api.Logger;
 
 // this covers Tomcat, TomEE, Glassfish, JBoss EAP
 public class CatalinaAppStartupAspect {
+
+
+    private static final Logger logger = Logger.getLogger(CatalinaAppStartupAspect.class);
 
     @Shim("org.apache.catalina.core.StandardContext")
     public interface StandardContextShim {
@@ -45,15 +49,21 @@ public class CatalinaAppStartupAspect {
             methodName = "start|startInternal", methodParameterTypes = {},
             nestingGroup = "servlet-startup", timerName = "startup")
     public static class StartAdvice {
+       
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindReceiver StandardContextShim standardContext) {
+            //ADDED
+            logger.info("************Entering static - StartAdvice.onBefore()***********************");
             String path = standardContext.getPath();
-            return ContainerStartup.onBeforeCommon(context, path, timerName);
+            TraceEntry te = ContainerStartup.onBeforeCommon(context, path, timerName);
+            logger.info("************Exiting StartAdvice.onBefore()***********************");
+            return te;
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+               
             traceEntry.end();
         }
         @OnThrow

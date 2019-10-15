@@ -26,6 +26,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+//CHECK
 class HeartbeatAlertingService {
 
     private final HeartbeatDao heartbeatDao;

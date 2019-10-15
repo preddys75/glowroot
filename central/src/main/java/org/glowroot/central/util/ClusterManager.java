@@ -62,6 +62,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+//CHECK
 public abstract class ClusterManager {
 
     private static final Logger logger = LoggerFactory.getLogger(ClusterManager.class);

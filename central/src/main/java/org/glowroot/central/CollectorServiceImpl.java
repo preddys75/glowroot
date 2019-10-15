@@ -333,6 +333,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         logger.info("********************************************************************************");
         logger.info("Entering collectTrace(), agentId=<{}>, postV09 -> <{}>, traceId=<{}>", request.getAgentId(), false, request.getTrace());
 
+        
+        //<MARK>
         throttledCollectTrace(request.getAgentId(), false, request.getTrace(), responseObserver);
 
         //ADDED

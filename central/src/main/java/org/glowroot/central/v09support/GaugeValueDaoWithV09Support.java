@@ -31,6 +31,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 
+//CHECK
 public class GaugeValueDaoWithV09Support implements GaugeValueDao {
 
     private final Set<String> agentRollupIdsWithV09Data;

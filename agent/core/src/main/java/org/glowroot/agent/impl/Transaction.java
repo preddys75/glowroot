@@ -221,6 +221,9 @@ public class Transaction {
             TransactionRegistry transactionRegistry, TransactionService transactionService,
             ConfigService configService, ThreadContextThreadLocal.Holder threadContextHolder,
             int rootNestingGroupId, int rootSuppressionKeyId) {
+
+        logger.info("**************Entry Transaction()********************************************");
+        
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -238,6 +241,10 @@ public class Transaction {
                 messageSupplier, timerName, startTick, captureThreadStats, maxQueryAggregates,
                 maxServiceCallAggregates, threadAllocatedBytes, false, ticker, threadContextHolder,
                 null, rootNestingGroupId, rootSuppressionKeyId);
+
+        logger.info("Params passed to constructor: \n" + ToString());
+
+        logger.info("***************Exit Transaction()*********************************************");
     }
 
     long getStartTime() {
@@ -854,6 +861,10 @@ public class Transaction {
             completed = true;
             detachIncompleteAuxThreadContexts();
         }
+
+        logger.info("***************end() method after completion set******************\n" + ToString());
+
+
         if (!unreleasedResources.isEmpty()) {
             boolean first = true;
             for (Map.Entry<Object, StackTraceElement[]> entry : unreleasedResources.entrySet()) {
@@ -1258,5 +1269,45 @@ public class Transaction {
         public int getSharedQueryTextIndex(String queryText) {
             return 0;
         }
+    }
+
+    public String ToString(){
+        
+        String retVal = "";
+
+
+        retVal =  "traceId: " + traceId +
+                   "\ntransactionName: " + transactionName + 
+                   "\nstartTime: " + startTime +
+                   "\nstartTick: " + startTick +
+                   "\nasync: " + async +
+                   "\nouter: " + outer +
+                   "\ntransactionType: " + transactionType +
+                   "\ntransactionTypePriority: " + transactionTypePriority +
+                   "\ntransactionNamePriority: " + transactionNamePriority +
+                   "\nUser: " + user +
+                   "\nuserPriority: " + userPriority;
+
+
+        if(attributes != null){
+            for(String attrName : attributes.keySet()){
+                retVal += "\n" + attrName + ": " + attributes.get(attrName);
+            }
+        }
+
+        retVal += "\nerrorMessage: " + errorMessage +
+                  "\nmaxTraceEntries: " + maxTraceEntries +
+                  "\nmaxQueryAggregates: " + maxQueryAggregates +
+                  "\nmaxServiceCallAggregates: " + maxServiceCallAggregates +
+                  "\nmaxProfileSamples: " + maxProfileSamples +
+                  "\ntransactionRegistry: " + transactionRegistry +
+                  "\ntransactionService: " + transactionService +
+                  "\nconfigService: " + configService +
+                  "\nslowThresholdMillis: " + slowThresholdMillis +
+                  "\nslowThresholdMillisPriority: " + slowThresholdMillisPriority +
+                  "\npartiallyStored: " + partiallyStored +
+                  "\ncaptureTime: " + captureTime;
+        return retVal;
+
     }
 }

@@ -25,6 +25,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 
+//Check
 public class TransactionNameSummaryCollector {
 
     private static final Ordering<TransactionNameSummary> orderingByTotalTimeDesc =

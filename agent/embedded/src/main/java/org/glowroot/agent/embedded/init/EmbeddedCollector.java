@@ -141,7 +141,14 @@ class EmbeddedCollector implements Collector {
 
     @Override
     public void collectTrace(TraceReader traceReader) throws Exception {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering collectTrace()**************************************");
+        logger.info("***TraceReader traceReader entering collectTrace -> {}", traceReader);
         traceDao.store(traceReader);
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting collectTrace()**************************************");
     }
 
     @Override

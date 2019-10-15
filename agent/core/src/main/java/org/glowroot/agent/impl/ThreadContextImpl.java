@@ -146,6 +146,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
             ThreadContextThreadLocal.Holder threadContextHolder,
             @Nullable ServletRequestInfo servletRequestInfo, int rootNestingGroupId,
             int rootSuppressionKeyId) {
+
+
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*********************Enter ThreadContextImpl()***********************");
+                
         this.transaction = transaction;
         this.parentTraceEntry = parentTraceEntry;
         rootTimer = TimerImpl.createRootTimer(castInitialized(this), (TimerNameImpl) rootTimerName);
@@ -165,6 +171,32 @@ public class ThreadContextImpl implements ThreadContextPlus {
         this.outerTransactionThreadContext = (ThreadContextImpl) threadContextHolder.get();
         currentNestingGroupId = rootNestingGroupId;
         currentSuppressionKeyId = rootSuppressionKeyId;
+
+        String toPrint = "";
+        toPrint = "\ntransaction: " + transaction +
+                  "\nparentTraceEntry: " + parentTraceEntry +
+                  "\nrootTimer: " + rootTimer +
+                  "\ntraceEntryComponent: " + traceEntryComponent +
+                  "\nparentThreadContextPriorEntry: " + parentThreadContextPriorEntry +
+                  "\nthreadId: " + threadId +
+                  "\nthreadStatsComponent: " + threadStatsComponent +
+                  "\nmaxQueryAggregates: " + maxQueryAggregates +
+                  "\nmaxServiceCallAggregates: " + maxServiceCallAggregates +
+                  "\nlimitExceededAuxThreadCount: " + limitExceededAuxThreadContext +
+                  "\nticker: " + ticker +
+                  "\nthreadContextHolder: " + threadContextHolder +
+                  "\nservletRequestInfo: " + servletRequestInfo +
+                  "\nouterTransactionThreadContext: " + outerTransactionThreadContext +
+                  "\ncurrentNestingGroupId: " + currentNestingGroupId +
+                  "\ncurrentSuppressionKeyId: " + currentSuppressionKeyId;                      
+                  
+                   
+        logger.info("*****************All data for ThreadContextImpl(): \n{}***********************", toPrint);
+
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*********************Exiting ThreadContextImpl()***********************");
     }
 
     public Transaction getTransaction() {

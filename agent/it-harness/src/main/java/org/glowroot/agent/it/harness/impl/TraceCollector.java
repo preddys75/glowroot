@@ -30,8 +30,12 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class TraceCollector {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceCollector.class);
 
     private final List<Trace> traces = Lists.newCopyOnWriteArrayList();
 
@@ -40,6 +44,12 @@ class TraceCollector {
 
     Trace getCompletedTrace(@Nullable String transactionType, @Nullable String transactionName,
             int timeout, TimeUnit unit) throws InterruptedException {
+
+         /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Entering getCompletedTrace()****transactionType: {}, transactionName: {}, timeout: {}, unit: {}**********",
+        transactionType, transactionName, timeout, unit);
+
         if (transactionName != null) {
             checkNotNull(transactionType);
         }
@@ -51,11 +61,17 @@ class TraceCollector {
                                 || trace.getHeader().getTransactionType().equals(transactionType))
                         && (transactionName == null || trace.getHeader().getTransactionName()
                                 .equals(transactionName))) {
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Exiting getCompletedTrace()****returning trace: {}", trace); 
                     return trace;
                 }
             }
             MILLISECONDS.sleep(10);
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Exiting getCompletedTrace()****no trace returned, exception thrown"); 
         if (transactionName != null) {
             throw new IllegalStateException("No trace was collected for transaction type \""
                     + transactionType + "\" and transaction name \"" + transactionName + "\"");
@@ -65,18 +81,28 @@ class TraceCollector {
         } else {
             throw new IllegalStateException("No trace was collected");
         }
+        
     }
 
     Trace getPartialTrace(int timeout, TimeUnit unit) throws InterruptedException {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Entering getPartialTrace()****timeout: {}, unit: {}**********", timeout, unit);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(unit) < timeout) {
             for (Trace trace : traces) {
                 if (trace.getHeader().getPartial()) {
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Exiting getPartialTrace()****returning trace: {}", trace); 
                     return trace;
                 }
             }
             MILLISECONDS.sleep(10);
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Exiting getPartialTrace()****no trace returned, exception thrown"); 
         if (traces.isEmpty()) {
             throw new IllegalStateException("No trace was collected");
         } else {
@@ -97,6 +123,9 @@ class TraceCollector {
     }
 
     public void checkAndResetLogMessages() throws InterruptedException {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Entering checkAndResetLogMessages()****");
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 10 && !expectedMessages.isEmpty()
                 && unexpectedMessages.isEmpty()) {
@@ -114,24 +143,42 @@ class TraceCollector {
             expectedMessages.clear();
             unexpectedMessages.clear();
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Exiting checkAndResetLogMessages()****"); 
     }
 
     public void collectTrace(Trace trace) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Entering collectTrace(): trace -> {}****", trace);
         for (int i = 0; i < traces.size(); i++) {
             Trace loopTrace = traces.get(i);
             if (loopTrace.getId().equals(trace.getId())) {
                 if (trace.getHeader().getDurationNanos() >= loopTrace.getHeader()
                         .getDurationNanos()) {
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****collectTrace(): trace set****");
                     traces.set(i, trace);
                 }
                 return;
             }
         }
         traces.add(trace);
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("****Exiting collectTrace()****"); 
     }
 
     public void log(LogEvent logEvent) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("****Entering log(): log event -> {}****", logEvent);
         if (isExpected(logEvent)) {
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("***log() -> Log event expected, returning****");
             return;
         }
         if (logEvent.getLoggerName().equals("org.apache.catalina.loader.WebappClassLoaderBase")
@@ -139,12 +186,18 @@ class TraceCollector {
                         "The web application \\[.*\\] appears to have started a thread named"
                                 + " \\[.*\\] but has failed to stop it\\. This is very likely to"
                                 + " create a memory leak\\.")) {
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("***log() -> Memory leak assoicated with org.apache.catalina.loader.WebappClassLoaderBase detected, exiting****");
             return;
         }
         if (logEvent.getLevel() == LogEvent.Level.WARN
                 || logEvent.getLevel() == LogEvent.Level.ERROR) {
             unexpectedMessages.add(logEvent);
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***Exiting log() ->Log event NOT expected, returning****");
     }
 
     private boolean isExpected(LogEvent logEvent) {

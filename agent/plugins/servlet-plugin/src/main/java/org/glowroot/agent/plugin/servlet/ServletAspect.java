@@ -51,11 +51,11 @@ import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttrib
 import org.glowroot.agent.plugin.servlet._.Strings;
 
 
-
+//CHECK
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
 
-    //private static final Logger logger = Logger.getLogger(OptionalThreadContextImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(ServletAspect.class);
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
@@ -110,6 +110,14 @@ public class ServletAspect {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
+
+            //ADDED
+            logger.info("*****Entering onThrow()*****************************************************");
+            logger.info("*********Request: {}", req);
+            logger.info("*********Response: {}", res);
+            logger.info("*********Throwable: {}", t);
+            logger.info("*********TraceEntry: {}", traceEntry);
+
             ServletMessageSupplier messageSupplier =
                     (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
@@ -120,14 +128,14 @@ public class ServletAspect {
             SendError.clearErrorMessage();
             traceEntry.endWithError(t);
             context.setServletRequestInfo(null);
+
+            //ADDED
+            logger.info("*****Exiting onThrow()*****************************************************");
         }
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
                 @Nullable ServletRequest req, @Nullable String transactionTypeOverride,
                 RequestInvoker requestInvoker) {
 
-            //ADDED
-//            logger.info("******************************************************************************");
-//            logger.info("onBeforeCommon(): tracevisitor: {}, req: {}, transactionTypeOverride: {}", context, req, transactionTypeOverride);
 
             if (context.getServletRequestInfo() != null) {
                 return null;
@@ -144,6 +152,11 @@ public class ServletAspect {
                 AuxThreadContext auxContext = auxContextObj;
                 return auxContext.startAndMarkAsyncTransactionComplete();
             }
+
+            //ADDED
+            logger.info("******************************************************************************");
+            logger.info("onBeforeCommon(): req: {}", req);
+
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
@@ -156,7 +169,27 @@ public class ServletAspect {
             String requestContextPath = Strings.nullToEmpty(request.getContextPath());
             String requestServletPath = Strings.nullToEmpty(request.getServletPath());
             String requestPathInfo = request.getPathInfo();
+
+            //ADDED
+            logger.info("****requestUri: {}****", requestUri);
+            logger.info("****requestQueryString: {}****", requestQueryString);
+            logger.info("****requestMethod: {}****", requestMethod);
+            logger.info("****requestContextPath: {}****", requestContextPath);
+            logger.info("****requestServletPath: {}****", requestServletPath);
+            logger.info("****requestPathInfo: {}****", requestPathInfo);
+            
+
             Map<String, Object> requestHeaders = DetailCapture.captureRequestHeaders(request);
+
+            //ADDED
+            logger.info("****Request Headers*******");
+            if (requestHeaders != null) {
+                for (String header : requestHeaders.keySet()) {
+                    logger.info("****requestHeader name: {}****", header);
+                    logger.info("****requestHeader value: {}****", requestHeaders.get(header));
+                }
+            }
+
             RequestHostAndPortDetail requestHostAndPortDetail =
                     DetailCapture.captureRequestHostAndPortDetail(request, requestInvoker);
             if (session == null) {
@@ -170,6 +203,11 @@ public class ServletAspect {
                         requestServletPath, requestPathInfo, requestUri, requestQueryString,
                         requestHeaders, requestHostAndPortDetail, sessionAttributes);
             }
+
+            //ADDED
+            logger.info("****Session Attributes: {}*******", session);
+            
+
             String user = null;
             if (session != null) {
                 SessionAttributePath userAttributePath =
@@ -183,6 +221,8 @@ public class ServletAspect {
             String transactionType;
             boolean setWithCoreMaxPriority = false;
             String transactionTypeHeader = request.getHeader("Glowroot-Transaction-Type");
+            //ADDED
+            logger.info("****request.getHeader(Glowroot-Transaction-Type) -> {}****", transactionTypeHeader);
             if ("Synthetic".equals(transactionTypeHeader)) {
                 // Glowroot-Transaction-Type header currently only accepts "Synthetic", in order to
                 // prevent spamming of transaction types, which could cause some issues
@@ -193,8 +233,12 @@ public class ServletAspect {
             } else {
                 transactionType = "Web";
             }
+            //ADDED
+            logger.info("****transactionType value assigned -> {}****", transactionType);
             TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
                     messageSupplier, timerName);
+            //ADDED
+            logger.info("****TraceEntry traceEntry -> {}****", traceEntry.getMessageSupplier());
             if (setWithCoreMaxPriority) {
                 context.setTransactionType(transactionType, Priority.CORE_MAX);
             }
@@ -208,6 +252,9 @@ public class ServletAspect {
             if (user != null) {
                 context.setTransactionUser(user, Priority.CORE_PLUGIN);
             }
+            //ADDED
+            logger.info("***Transaction User: {}****",  user);
+            logger.info("*********Exiting onBeforeCommon()****");
             return traceEntry;
         }
     }
@@ -324,10 +371,14 @@ public class ServletAspect {
                     (ServletMessageSupplier) context.getServletRequestInfo();
             if (messageSupplier != null) {
                 messageSupplier.setResponseCode(statusCode);
+                logger.info("************MessageSupplier: {}", messageSupplier);               
             }
             if (captureAsError(statusCode)) {
+                logger.info("****Error status code: {}*********", statusCode);    
                 FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder =
                         SendError.getErrorMessageHolder();
+                logger.info("****Context printed: {}*********", context);   
+                
                 if (errorMessageHolder.get() == null) {
                     context.addErrorEntry("sendError, HTTP status code " + statusCode);
                     errorMessageHolder.set("sendError, HTTP status code " + statusCode);
@@ -360,7 +411,9 @@ public class ServletAspect {
                     // absolute path)
                     String header = responseInvoker.getHeader(response, "Location");
                     messageSupplier.addResponseHeader("Location", header);
+                    logger.info("****onAfter() -> Location from responseInvoker: {}*********", header);  
                 } else if (location != null) {
+                    logger.info("****onAfter() -> Location from location param: {}*********", location);  
                     messageSupplier.addResponseHeader("Location", location);
                 }
             }
@@ -376,8 +429,12 @@ public class ServletAspect {
         public static void onAfter(ThreadContext context, @BindParameter int statusCode) {
             ServletMessageSupplier messageSupplier =
                     (ServletMessageSupplier) context.getServletRequestInfo();
+            
             if (messageSupplier != null) {
                 messageSupplier.setResponseCode(statusCode);
+                //ADDED
+                logger.info("****Enter onAfter() -> statusCode: {} ;;; ThreadContext -->  {}", statusCode, context);  
+               
             }
             if (SendErrorAdvice.captureAsError(statusCode)) {
                 FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder =
@@ -385,8 +442,11 @@ public class ServletAspect {
                 if (errorMessageHolder.get() == null) {
                     context.addErrorEntry("setStatus, HTTP status code " + statusCode);
                     errorMessageHolder.set("setStatus, HTTP status code " + statusCode);
+                    //ADDED
+                    logger.info("****Enter onAfter() -> statusCode: {} ;;; ThreadContext -->  {}", statusCode, context);  
                 }
             }
+
         }
     }
 
@@ -398,7 +458,10 @@ public class ServletAspect {
         public static void onReturn(@BindReturn @Nullable Principal principal,
                 ThreadContext context) {
             if (principal != null) {
+                //ADDED
+                logger.info("****User Principal:  {}", principal);  
                 context.setTransactionUser(principal.getName(), Priority.CORE_PLUGIN);
+                logger.info("****context.setTransactionUser() to user principal: {}", principal);
             }
         }
     }
@@ -412,8 +475,11 @@ public class ServletAspect {
             if (session == null) {
                 return;
             }
-            if (ServletPluginProperties.sessionUserAttributeIsId()) {
+            if (ServletPluginProperties.sessionUserAttributeIsId()) {                
+                //ADDED
+                logger.info("****session.getId():  {}", session.getId());  
                 context.setTransactionUser(session.getId(), Priority.CORE_PLUGIN);
+                logger.info("****context.setTransactionUser() to session.getId():  {} with priority: {}", session.getId(), Priority.CORE_PLUGIN);
             }
             if (ServletPluginProperties.captureSessionAttributeNamesContainsId()) {
                 ServletMessageSupplier messageSupplier =
@@ -421,6 +487,9 @@ public class ServletAspect {
                 if (messageSupplier != null) {
                     messageSupplier.putSessionAttributeChangedValue(
                             ServletPluginProperties.HTTP_SESSION_ID_ATTR, session.getId());
+                    //ADDED
+                    logger.info("****Setting HTTP_SESSION_ID_ATTR attr: {} to session.getId(): {}", ServletPluginProperties.HTTP_SESSION_ID_ATTR, session.getId());  
+             
                 }
             }
         }
@@ -441,6 +510,8 @@ public class ServletAspect {
     public static class ServiceInitAdvice {
         @OnBefore
         public static void onBefore() {
+            //ADDED
+            logger.info("****Started ContainerStartup.initPlatformMBeanServer()****");  
             ContainerStartup.initPlatformMBeanServer();
         }
     }

@@ -26,7 +26,12 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TransactionNameErrorSummaryCollector {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionNameErrorSummaryCollector.class);
 
     @VisibleForTesting
     static final Ordering<TransactionNameErrorSummary> orderingByErrorCountDesc =
@@ -56,6 +61,12 @@ public class TransactionNameErrorSummaryCollector {
 
     public void collect(String transactionName, long errorCount, long transactionCount,
             long captureTime) {
+
+        //ADDED
+        logger.info("********************************************************************************");
+        logger.info("*************Entering collect()************************************");
+        
+
         MutableTransactionNameErrorSummary mtes =
                 transactionNameErrorSummaries.get(transactionName);
         if (mtes == null) {
@@ -65,6 +76,13 @@ public class TransactionNameErrorSummaryCollector {
         mtes.errorCount += errorCount;
         mtes.transactionCount += transactionCount;
         lastCaptureTime = Math.max(lastCaptureTime, captureTime);
+
+        logger.info("************New transaction error summary: " + mtes);
+        logger.info("************Last capture time: {}", lastCaptureTime);
+
+         //ADDED
+         logger.info("********************************************************************************");
+         logger.info("*************Exiting collect()************************************");
     }
 
     public long getLastCaptureTime() {
@@ -73,6 +91,9 @@ public class TransactionNameErrorSummaryCollector {
 
     public Result<TransactionNameErrorSummary> getResult(ErrorSummarySortOrder sortOrder,
             int limit) {
+         //ADDED
+         logger.info("********************************************************************************");
+         logger.info("*************Entering getResult()************************************");
         List<TransactionNameErrorSummary> summaries = Lists.newArrayList();
         for (Map.Entry<String, MutableTransactionNameErrorSummary> entry : transactionNameErrorSummaries
                 .entrySet()) {
@@ -81,13 +102,21 @@ public class TransactionNameErrorSummaryCollector {
                     .errorCount(entry.getValue().errorCount)
                     .transactionCount(entry.getValue().transactionCount)
                     .build());
+                logger.info("Transaction Name Error Summary entry: " + entry.getKey() + ", contents:   " + entry.getValue());
         }
         summaries = sortTransactionNameErrorSummaries(summaries, sortOrder);
         if (summaries.size() > limit) {
+            //ADDED
+            logger.info("********************************************************************************");
+            logger.info("*************Exiting getResult()************************************");
             return new Result<TransactionNameErrorSummary>(summaries.subList(0, limit), true);
         } else {
+            //ADDED
+            logger.info("********************************************************************************");
+            logger.info("*************Exiting getResult()************************************");
             return new Result<TransactionNameErrorSummary>(summaries, false);
         }
+        
     }
 
     private static List<TransactionNameErrorSummary> sortTransactionNameErrorSummaries(

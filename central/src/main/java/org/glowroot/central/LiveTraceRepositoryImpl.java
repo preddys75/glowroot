@@ -26,7 +26,15 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+//ADDED
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+
 class LiveTraceRepositoryImpl implements LiveTraceRepository {
+    //ADDED
+    private static final Logger logger = LoggerFactory.getLogger(LiveTraceRepositoryImpl.class);
+
 
     private final DownstreamServiceImpl downstreamService;
 
@@ -36,17 +44,40 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) throws Exception {
-        return downstreamService.getHeader(agentId, traceId);
+        logger.info("*********************Enter getHeader()***********************");
+        Trace.Header header = downstreamService.getHeader(agentId, traceId);
+        /*ADDED*/
+        logger.info("******Printing and Exiting Header: " + header);
+        return header;
+         
     }
 
     @Override
     public @Nullable Entries getEntries(String agentId, String traceId) throws Exception {
-        return downstreamService.getEntries(agentId, traceId);
+        logger.info("*********************Enter getEntries()***********************");
+        Entries entries = downstreamService.getEntries(agentId, traceId);
+        if(entries != null && entries.entries() != null){
+            for(Trace.Entry entry : entries.entries()){
+                logger.info("******Entry: " + entry);
+                
+            }
+        }
+        logger.info("*********************Exit getEntries()***********************");
+        return entries;
     }
 
     @Override
     public @Nullable Queries getQueries(String agentId, String traceId) throws Exception {
-        return downstreamService.getQueries(agentId, traceId);
+        logger.info("*********************Enter getQueries()***********************");
+        Queries queries = downstreamService.getQueries(agentId, traceId);
+        if(queries != null && queries.queries() != null){
+            for(Aggregate.Query query :queries.queries()){
+                logger.info("******Query: " + query);
+                
+            }
+        }
+        logger.info("*********************Exiting getQueries()***********************");
+        return queries;
     }
 
     @Override
@@ -61,7 +92,14 @@ class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
-        return downstreamService.getFullTrace(agentId, traceId);
+        logger.info("*********************Enter getFullTrace()***********************");
+        
+        Trace trace = downstreamService.getFullTrace(agentId, traceId);
+        
+        logger.info("******Full trace: " + trace);
+        logger.info("*********************Exit getFullTrace()***********************");
+
+        return trace;
     }
 
     @Override

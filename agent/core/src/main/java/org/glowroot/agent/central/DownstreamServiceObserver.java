@@ -141,6 +141,12 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     @Override
     public void onNext(CentralRequest request) {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering onNext()**************************************");
+        logger.info("*******Request: {}", request);
+
         inMaybeConnectionFailure.set(false);
         boolean errorFixed = inConnectionFailure.getAndSet(false);
         if (errorFixed) {
@@ -159,6 +165,10 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting onNext()**************************************");
     }
 
     @Override
@@ -192,6 +202,10 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     }
 
     void connectAsync() {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering connectAsync()**************************************");
+        
         // these are async so never fail, onError() will be called on failure
         StreamObserver<AgentResponse> responseObserver = downstreamServiceStub.connect(this);
         currResponseObserver = responseObserver;
@@ -199,9 +213,18 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .setHello(Hello.newBuilder()
                         .setAgentId(agentId))
                 .build());
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting connectAsync()**************************************");
     }
 
     private void onNextInternal(CentralRequest request) throws InterruptedException {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering onNextInternal()**************************************");
+
         StreamObserver<AgentResponse> responseObserver = currResponseObserver;
         while (responseObserver == null) {
             MILLISECONDS.sleep(10);
@@ -287,6 +310,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 getFullTraceAndRespond(request, responseObserver);
                 return;
             default:
+                /*ADDED*/
+                logger.info("********************************************************************************");
+                logger.info("***************UNKNOWN EVENT -> Exiting onNextInternal()**************************************"); 
                 responseObserver.onNext(AgentResponse.newBuilder()
                         .setRequestId(request.getRequestId())
                         .setUnknownRequestResponse(UnknownRequestResponse.getDefaultInstance())
@@ -297,6 +323,10 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void updateConfigAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering updateConfigAndRespond()**************************************");
+ 
         if (configReadOnly) {
             // the central collector should observe the InitMessage AgentConfig's config_read_only
             // and not even send this request
@@ -312,6 +342,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting updateConfigAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setAgentConfigUpdateResponse(AgentConfigUpdateResponse.getDefaultInstance())
@@ -320,6 +353,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void threadDumpAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering threadDumpAndRespond()**************************************");
         ThreadDump threadDump;
         try {
             threadDump = liveJvmService.getThreadDump("");
@@ -328,6 +364,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting threadDumpAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setThreadDumpResponse(ThreadDumpResponse.newBuilder()
@@ -337,6 +376,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void jstackAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering jstackAndRespond()**************************************");
         String jstack;
         try {
             jstack = liveJvmService.getJstack("");
@@ -362,6 +404,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting jstackAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setJstackResponse(JstackResponse.newBuilder()
@@ -371,6 +416,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void availableDiskSpaceAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering availableDiskSpaceAndRespond()**************************************");
         long availableDiskSpaceBytes;
         try {
             availableDiskSpaceBytes = liveJvmService.getAvailableDiskSpace("",
@@ -388,6 +436,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting availableDiskSpaceAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setAvailableDiskSpaceResponse(AvailableDiskSpaceResponse.newBuilder()
@@ -397,6 +448,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void heapDumpAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering heapDumpAndRespond()**************************************");
         HeapDumpFileInfo heapDumpFileInfo;
         try {
             heapDumpFileInfo =
@@ -414,6 +468,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting heapDumpAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setHeapDumpResponse(HeapDumpResponse.newBuilder()
@@ -423,6 +480,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void heapHistogramAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering heapHistogramAndRespond()**************************************");
         HeapHistogram heapHistogram;
         try {
             heapHistogram = liveJvmService.heapHistogram("");
@@ -448,6 +508,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting heapHistogramAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setHeapHistogramResponse(HeapHistogramResponse.newBuilder()
@@ -457,6 +520,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void explicitGcDisabledAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering explicitGcDisabledAndRespond()**************************************");
         boolean disabled;
         try {
             disabled = liveJvmService.isExplicitGcDisabled("");
@@ -465,6 +531,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting explicitGcDisabledAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setExplicitGcDisabledResponse(ExplicitGcDisabledResponse.newBuilder()
@@ -474,6 +543,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void forceGcAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering forceGcAndRespond()**************************************");
         try {
             liveJvmService.forceGC("");
         } catch (Exception e) {
@@ -481,6 +553,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting forceGcAndRespond()****");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setForceGcResponse(ForceGcResponse.getDefaultInstance())
@@ -489,6 +564,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void mbeanDumpAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering mbeanDumpAndRespond()**************************************");
         MBeanDumpRequest req = request.getMbeanDumpRequest();
         MBeanDump mbeanDump;
         try {
@@ -498,6 +576,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+          /*ADDED*/
+          logger.info("********************************************************************************");
+          logger.info("***************Exiting mbeanDumpAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMbeanDumpResponse(MBeanDumpResponse.newBuilder()
@@ -507,6 +588,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void matchingMBeanObjectNamesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering matchingMBeanObjectNamesAndRespond()**************************************");
         MatchingMBeanObjectNamesRequest req = request.getMatchingMbeanObjectNamesRequest();
         List<String> objectNames;
         try {
@@ -517,6 +601,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting matchingMBeanObjectNamesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMatchingMbeanObjectNamesResponse(MatchingMBeanObjectNamesResponse.newBuilder()
@@ -526,6 +613,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void mbeanMetaAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting mbeanMetaAndRespond()**************************************");
         MBeanMetaRequest req = request.getMbeanMetaRequest();
         MBeanMeta mbeanMeta;
         try {
@@ -535,6 +625,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting mbeanMetaAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMbeanMetaResponse(MBeanMetaResponse.newBuilder()
@@ -544,6 +637,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void systemPropertiesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering systemPropertiesAndRespond()**************************************");
         Map<String, String> systemProperties;
         try {
             systemProperties = liveJvmService.getSystemProperties("");
@@ -552,6 +648,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting systemPropertiesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setSystemPropertiesResponse(SystemPropertiesResponse.newBuilder()
@@ -561,6 +660,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void currentTimeAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+          /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering currentTimeAndRespond()**************************************");
         long currentTime;
         try {
             currentTime = liveJvmService.getCurrentTime("");
@@ -569,6 +671,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting currentTimeAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setCurrentTimeResponse(CurrentTimeResponse.newBuilder()
@@ -578,6 +683,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void capabilitiesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering capabilitiesAndRespond()**************************************");
         Capabilities capabilities;
         try {
             capabilities = liveJvmService.getCapabilities("");
@@ -586,6 +694,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting capabilitiesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setCapabilitiesResponse(CapabilitiesResponse.newBuilder()
@@ -595,6 +706,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void globalMetaAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering globalMetaAndRespond()**************************************");
         GlobalMeta globalMeta;
         try {
             globalMeta = liveWeavingService.getGlobalMeta("");
@@ -603,6 +717,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting globalMetaAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setGlobalMetaResponse(GlobalMetaResponse.newBuilder()
@@ -612,6 +729,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void preloadClasspathCacheAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering preloadClasspathCacheAndRespond()**************************************");
         try {
             liveWeavingService.preloadClasspathCache("");
         } catch (Exception e) {
@@ -619,6 +739,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting preloadClasspathCacheAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setPreloadClasspathCacheResponse(
@@ -628,6 +751,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void matchingClassNamesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering matchingClassNamesAndRespond()**************************************");
         MatchingClassNamesRequest req = request.getMatchingClassNamesRequest();
         List<String> classNames;
         try {
@@ -638,6 +764,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting matchingClassNamesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMatchingClassNamesResponse(MatchingClassNamesResponse.newBuilder()
@@ -647,6 +776,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void matchingMethodNamesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering matchingMethodNamesAndRespond()**************************************");
         MatchingMethodNamesRequest req = request.getMatchingMethodNamesRequest();
         List<String> methodNames;
         try {
@@ -657,6 +789,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting matchingMethodNamesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMatchingMethodNamesResponse(MatchingMethodNamesResponse.newBuilder()
@@ -666,6 +801,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void methodSignaturesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering methodSignaturesAndRespond()**************************************");
         MethodSignaturesRequest req = request.getMethodSignaturesRequest();
         List<MethodSignature> methodSignatures;
         try {
@@ -676,6 +814,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting methodSignaturesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMethodSignaturesResponse(MethodSignaturesResponse.newBuilder()
@@ -685,6 +826,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void reweaveAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering reweaveAndRespond()**************************************");
         int classUpdateCount;
         try {
             classUpdateCount = liveWeavingService.reweave("");
@@ -693,6 +837,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             sendExceptionResponse(request, responseObserver);
             return;
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting reweaveAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setReweaveResponse(ReweaveResponse.newBuilder()
@@ -702,6 +849,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void getHeaderAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering getHeaderAndRespond()**************************************");
         Trace.Header header;
         try {
             header = liveTraceRepository.getHeader("", request.getHeaderRequest().getTraceId());
@@ -718,6 +868,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                     .setHeader(header)
                     .build();
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting getHeaderAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setHeaderResponse(response)
@@ -726,6 +879,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void getEntriesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+          /*ADDED*/
+          logger.info("********************************************************************************");
+          logger.info("***************Entering getEntriesAndRespond()**************************************");
         Entries entries;
         try {
             entries = liveTraceRepository.getEntries("", request.getEntriesRequest().getTraceId());
@@ -740,6 +896,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             response.addAllSharedQueryText(sharedQueryTextLimiter
                     .reduceTracePayloadWherePossible(entries.sharedQueryTexts()));
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting getEntriesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setEntriesResponse(response)
@@ -748,6 +907,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void getQueriesAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering getQueriesAndRespond()**************************************");
         Queries queries;
         try {
             queries = liveTraceRepository.getQueries("", request.getQueriesRequest().getTraceId());
@@ -762,6 +924,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             response.addAllSharedQueryText(sharedQueryTextLimiter
                     .reduceTracePayloadWherePossible(queries.sharedQueryTexts()));
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting getQueriesAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setQueriesResponse(response)
@@ -770,6 +935,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void getMainThreadProfileAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering getMainThreadProfileAndRespond()**************************************");
         Profile profile;
         try {
             profile = liveTraceRepository.getMainThreadProfile("",
@@ -787,6 +955,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                     .setProfile(profile)
                     .build();
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting getMainThreadProfileAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setMainThreadProfileResponse(response)
@@ -795,6 +966,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void getAuxThreadProfileAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering getAuxThreadProfileAndRespond()**************************************");
         Profile profile;
         try {
             profile = liveTraceRepository.getAuxThreadProfile("",
@@ -812,6 +986,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                     .setProfile(profile)
                     .build();
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting getAuxThreadProfileAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setAuxThreadProfileResponse(response)
@@ -820,6 +997,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void getFullTraceAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering getFullTraceAndRespond()**************************************");
         Trace trace;
         try {
             trace = liveTraceRepository.getFullTrace("",
@@ -837,6 +1017,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                     .setTrace(trace)
                     .build();
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Exiting getFullTraceAndRespond()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setFullTraceResponse(response)
@@ -860,10 +1043,16 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private static void sendExceptionResponse(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("***************Entering sendExceptionResponse()**************************************");
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setExceptionResponse(ExceptionResponse.getDefaultInstance())
                 .build());
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering sendExceptionResponse()**************************************");
     }
 
     private class RetryAfterError implements Runnable {

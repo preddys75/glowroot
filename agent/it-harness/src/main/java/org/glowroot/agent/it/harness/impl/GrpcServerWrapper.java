@@ -161,14 +161,28 @@ class GrpcServerWrapper {
         @Override
         public void collectInit(InitMessage request,
                 StreamObserver<InitResponse> responseObserver) {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering CollectorServiceImpl.collectInit(): Request -> {}*******", request);
+            
             agentConfig = request.getAgentConfig();
             responseObserver.onNext(InitResponse.getDefaultInstance());
             responseObserver.onCompleted();
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Exiting CollectorServiceImpl.collectInit(): **************");
         }
 
         @Override
         public StreamObserver<AggregateStreamMessage> collectAggregateStream(
                 final StreamObserver<AggregateResponseMessage> responseObserver) {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering CollectorServiceImpl.collectAggregateStream, returning stream observer(): *******");
+            
             return new StreamObserver<AggregateStreamMessage>() {
                 @Override
                 public void onNext(AggregateStreamMessage value) {}
@@ -187,13 +201,24 @@ class GrpcServerWrapper {
         @Override
         public void collectGaugeValues(GaugeValueMessage request,
                 StreamObserver<GaugeValueResponseMessage> responseObserver) {
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering CollectorServiceImpl.collectGaugeValues(), Request -> {}: *******", request);
             responseObserver.onNext(GaugeValueResponseMessage.getDefaultInstance());
             responseObserver.onCompleted();
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Exiting CollectorServiceImpl.collectGaugeValues()******");
         }
 
         @Override
         public StreamObserver<TraceStreamMessage> collectTraceStream(
                 final StreamObserver<EmptyMessage> responseObserver) {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering CollectorServiceImpl.collectTraceStream(), returning StreamObserver<TraceStreamMessage>()*****");
+
             return new StreamObserver<TraceStreamMessage>() {
 
                 private @MonotonicNonNull String traceId;
@@ -206,6 +231,11 @@ class GrpcServerWrapper {
 
                 @Override
                 public void onNext(TraceStreamMessage value) {
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Entering CollectorServiceImpl.onNext()***** Value -> {}", value);
+
                     try {
                         onNextInternal(value);
                     } catch (RuntimeException t) {
@@ -215,10 +245,19 @@ class GrpcServerWrapper {
                         logger.error(t.getMessage(), t);
                         throw new RuntimeException(t);
                     }
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Exiting CollectorServiceImpl.onNext()*****");
                 }
 
                 @Override
                 public void onCompleted() {
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Entering CollectorServiceImpl.onCompleted()*****");
+
                     try {
                         onCompletedInternal(responseObserver);
                     } catch (RuntimeException t) {
@@ -228,6 +267,10 @@ class GrpcServerWrapper {
                         logger.error(t.getMessage(), t);
                         throw new RuntimeException(t);
                     }
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Exiting CollectorServiceImpl.onCompleted()*****");
                 }
 
                 @Override
@@ -236,6 +279,12 @@ class GrpcServerWrapper {
                 }
 
                 private void onNextInternal(TraceStreamMessage value) {
+
+                     /*ADDED*/
+                     logger.info("********************************************************************************");
+                     logger.info("****Entering CollectorServiceImpl.onNextInternal()*****: TraceStreamMessage -> {}", value);
+ 
+
                     switch (value.getMessageCase()) {
                         case STREAM_HEADER:
                             traceId = value.getStreamHeader().getTraceId();
@@ -266,16 +315,30 @@ class GrpcServerWrapper {
                             throw new RuntimeException(
                                     "Unexpected message: " + value.getMessageCase());
                     }
+
+                     /*ADDED*/
+                     logger.info("********************************************************************************");
+                     logger.info("****Exiting CollectorServiceImpl.onNextInternal()*************************");
                 }
 
                 private void onCompletedInternal(
                         final StreamObserver<EmptyMessage> responseObserver) {
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Entering CollectorServiceImpl.onCompletedInternal(): {}*******", responseObserver);
+                    
                     Trace.Builder trace = Trace.newBuilder()
                             .setId(checkNotNull(traceId))
                             .setHeader(checkNotNull(header))
                             .addAllSharedQueryText(sharedQueryTexts)
                             .addAllEntry(entries)
                             .addAllQuery(queries);
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Printing CollectorServiceImpl.onCompletedInternal() trace obj: {}", trace);
+                    
                     if (mainThreadProfile != null) {
                         trace.setMainThreadProfile(mainThreadProfile);
                     }
@@ -291,12 +354,21 @@ class GrpcServerWrapper {
                     }
                     responseObserver.onNext(EmptyMessage.getDefaultInstance());
                     responseObserver.onCompleted();
+
+                    /*ADDED*/
+                    logger.info("********************************************************************************");
+                    logger.info("****Exiting CollectorServiceImpl.onCompletedInternal()");
                 }
             };
         }
 
         @Override
         public void log(LogMessage request, StreamObserver<EmptyMessage> responseObserver) {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering CollectorServiceImpl.log(): Request -> {}", request);
+
             try {
                 collector.log(request.getLogEvent());
             } catch (Throwable t) {
@@ -306,6 +378,11 @@ class GrpcServerWrapper {
             }
             responseObserver.onNext(EmptyMessage.getDefaultInstance());
             responseObserver.onCompleted();
+
+             /*ADDED*/
+             logger.info("********************************************************************************");
+             logger.info("****Exiting CollectorServiceImpl.log()***************");
+
         }
 
         private String resolveFullText(Trace.SharedQueryText sharedQueryText) {
@@ -340,6 +417,11 @@ class GrpcServerWrapper {
                 new StreamObserver<AgentResponse>() {
                     @Override
                     public void onNext(AgentResponse value) {
+
+                        /*ADDED*/
+                        logger.info("********************************************************************************");
+                        logger.info("****Entering DownstreamServiceImpl.StreamObserver.onNext() {}", value);
+
                         if (value.getMessageCase() == MessageCase.HELLO) {
                             return;
                         }
@@ -360,11 +442,24 @@ class GrpcServerWrapper {
                         } catch (TimeoutException e) {
                             logger.error(e.getMessage(), e);
                         }
+
+                        /*ADDED*/
+                        logger.info("********************************************************************************");
+                        logger.info("****Exiting DownstreamServiceImpl.StreamObserver.onNext()*********");
                     }
                     @Override
                     public void onCompleted() {
+
+                        /*ADDED*/
+                        logger.info("********************************************************************************");
+                        logger.info("****Entering StreamObserver.onCompleted()***********");
+
                         checkNotNull(requestObserver).onCompleted();
                         closedByAgent = true;
+
+                        /*ADDED*/
+                        logger.info("********************************************************************************");
+                        logger.info("****Exiting StreamObserver.onCompleted()***********");
                     }
                     @Override
                     public void onError(Throwable t) {
@@ -379,16 +474,35 @@ class GrpcServerWrapper {
         @Override
         public StreamObserver<AgentResponse> connect(
                 StreamObserver<CentralRequest> requestObserver) {
+         
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering DownstreamServiceImpl.connect()****");
+            
             this.requestObserver = requestObserver;
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Exiting DownstreamServiceImpl.connect()****");
+
             return responseObserver;
         }
 
         private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
+  
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering DownstreamServiceImpl.updateAgentConfig()****, agentConfig: {}", agentConfig);
+
             sendRequest(CentralRequest.newBuilder()
                     .setRequestId(nextRequestId.getAndIncrement())
                     .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
                             .setAgentConfig(agentConfig))
                     .build());
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Exiting DownstreamServiceImpl.updateAgentConfig()****");
         }
 
         private int reweave() throws Exception {
@@ -400,6 +514,12 @@ class GrpcServerWrapper {
         }
 
         private AgentResponse sendRequest(CentralRequest request) throws Exception {
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Entering DownstreamServiceImpl.sendRequest()****, request: {}", request);
+
+
             ResponseHolder responseHolder = new ResponseHolder();
             responseHolders.put(request.getRequestId(), responseHolder);
             while (requestObserver == null) {
@@ -416,6 +536,11 @@ class GrpcServerWrapper {
             if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
                 throw new IllegalStateException();
             }
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****Exiting DownstreamServiceImpl.sendRequest(): response -> {}****", response); 
+
             return response;
         }
     }

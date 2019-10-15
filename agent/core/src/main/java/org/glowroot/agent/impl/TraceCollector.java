@@ -158,7 +158,15 @@ public class TraceCollector {
         }
     }
 
+    //<MARK - trace>
     void collectTrace(Transaction transaction) {
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering collectTrace()**************************************");
+        logger.info("***Transaction transaction -> {}", transaction);        
+        
+
         boolean slow = shouldStoreSlow(transaction);
         if (!slow && !shouldStoreError(transaction)) {
             return;
@@ -186,6 +194,10 @@ public class TraceCollector {
             backPressureLogger.warn("not storing a trace because of an excessive backlog of {}"
                     + " traces already waiting to be stored", PENDING_LIMIT * 3);
         }
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Exiting collectTrace()**************************************");
+
     }
 
     public void storePartialTrace(Transaction transaction) {

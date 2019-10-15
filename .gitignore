@@ -2,5 +2,7 @@ target/
 **/*.iml
 **/*.settings
 **/*.project
+**/*.classpath
+**/.factorypath
 build.out
 .idea

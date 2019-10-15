@@ -29,6 +29,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.util.SizeLimitBypassingParser;
 
+//CHECK
 public class Messages {
 
     private Messages() {}

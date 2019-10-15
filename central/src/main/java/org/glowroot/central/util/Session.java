@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+//CHECK
 public class Session {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);

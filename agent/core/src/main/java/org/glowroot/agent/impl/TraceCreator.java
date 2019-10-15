@@ -39,6 +39,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//CHECK
 @Styles.Private
 public class TraceCreator {
 
@@ -101,9 +102,11 @@ public class TraceCreator {
         builder.setStartTime(transaction.getStartTime());
         builder.setCaptureTime(captureTime);
         builder.setDurationNanos(captureTick - transaction.getStartTick());
+        
         /*ADDED*/
         logger.info("********************************************************************************");
         logger.info("createTraceHeader -> setTransactionType() -- transactionType: {}", transaction.getTransactionType());
+        
         builder.setTransactionType(transaction.getTransactionType());
         builder.setTransactionName(transaction.getTransactionName());
         builder.setHeadline(transaction.getHeadline());

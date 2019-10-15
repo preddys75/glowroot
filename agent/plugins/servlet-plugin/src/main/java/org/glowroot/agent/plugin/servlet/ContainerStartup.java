@@ -36,6 +36,15 @@ public class ContainerStartup {
     static TraceEntry onBeforeCommon(OptionalThreadContext context, @Nullable String path,
             TimerName timerName) {
         initPlatformMBeanServer();
+
+        //ADDED
+        logger.info("************Entering static - onBeforeCommon()***********************");
+
+        /*ADDED*/
+        StackTraceElement st = new Throwable().fillInStackTrace().getStackTrace()[1];
+        String caller = st.getClassName() + ":  " + st.getMethodName();
+        logger.info("Caller: {}", caller);
+
         String transactionName;
         if (path == null || path.isEmpty()) {
             // root context path is empty "", but makes more sense to display "/"
@@ -43,9 +52,21 @@ public class ContainerStartup {
         } else {
             transactionName = "Servlet context: " + path;
         }
+        logger.info("*******transactionName: {} ************************", transactionName);
+
+        //ADDED
+        MessageSupplier temp = MessageSupplier.create(transactionName);
+        logger.info("Params passed to startTransaction()\n transactionType: {}, transactionName: {}, messageSupplier: {}, " +
+                    "timerName: {}", "Startup", transactionName, temp, timerName);
+
         TraceEntry traceEntry = context.startTransaction("Startup", transactionName,
-                MessageSupplier.create(transactionName), timerName);
+                temp, timerName);
+
         context.setTransactionSlowThreshold(0, MILLISECONDS, Priority.CORE_PLUGIN);
+
+        //ADDED
+        logger.info("************Exiting static - onBeforeCommon()***********************");
+
         return traceEntry;
     }
 

@@ -253,10 +253,12 @@ public class CentralCollector implements Collector {
         logger.info("***************Entering collectGaugeValues()**************************************");
         logger.info("***Printing list of List<GaugeValue> gaugeValues below");
 
+        String g_print = "";
         for(GaugeValue gaugeValue : gaugeValues){
-            logger.info("********************************************************************************");
-            logger.info("*********Gauge value: {}******************", gaugeValue);
+            g_print += "\ngaugeValue -> " + gaugeValue;
         }
+        logger.info("********************************************************************************");
+        logger.info("*********Gauge values: {}******************", g_print);
 
 
 
@@ -331,9 +333,9 @@ public class CentralCollector implements Collector {
     public void log(LogEvent logEvent) throws InterruptedException {
 
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Entering log()**************************************");
-        logger.info("***LogEvent logEvent -> {}", logEvent);
+        // logger.info("********************************************************************************");
+        // logger.info("***************Entering log()**************************************");
+        // logger.info("***LogEvent logEvent -> {}", logEvent);
 
 
 
@@ -356,9 +358,9 @@ public class CentralCollector implements Collector {
             }
         });
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Exiting log()**************************************");
-        logger.info("***LogEvent logEvent -> {}", logEvent);
+        // logger.info("********************************************************************************");
+        // logger.info("***************Exiting log()**************************************");
+        // logger.info("***LogEvent logEvent -> {}", logEvent);
     }
 
     @OnlyUsedByTests
@@ -596,7 +598,7 @@ public class CentralCollector implements Collector {
 
             //ADDED
             logger.info("******************************************************************************");
-            logger.info("call(): observer, {}", responseObserver);
+            logger.info("CollectTraceGrpcCall.Scall(): observer, {}", responseObserver);
 
             StreamObserver<TraceStreamMessage> requestObserver =
                     collectorServiceStub.collectTraceStream(responseObserver);

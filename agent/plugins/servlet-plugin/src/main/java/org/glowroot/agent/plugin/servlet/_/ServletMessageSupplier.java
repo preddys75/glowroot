@@ -34,10 +34,14 @@ import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.checker.RequiresNonNull;
 import org.glowroot.agent.plugin.api.util.Optional;
 import org.glowroot.agent.plugin.servlet.DetailCapture;
+import org.glowroot.agent.plugin.api.Logger;
 
+//CHECK
 // this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
 // auxiliary thread contexts for handling async servlets
 public class ServletMessageSupplier extends MessageSupplier implements ServletRequestInfo {
+
+    private static final Logger logger = Logger.getLogger(ServletMessageSupplier.class);
 
     private static final String MASK_TEXT = "****";
 
@@ -84,6 +88,39 @@ public class ServletMessageSupplier extends MessageSupplier implements ServletRe
         this.requestHeaders = requestHeaders;
         this.requestHostAndPortDetail = requestHostAndPortDetail;
         this.sessionAttributeInitialValueMap = sessionAttributeMap;
+
+        /*ADDED*/
+        StackTraceElement st = new Throwable().fillInStackTrace().getStackTrace()[1];
+        String caller = st.getClassName() + ":  " + st.getMethodName();
+        logger.info("********************************************************************************");
+        logger.info("*********************Enter ServletMessageSupplier()***********************");
+        logger.info("Caller: {}", caller);
+
+        logger.info("*********requestMethod: {}*************", requestMethod);
+        logger.info("*********requestContextPath: {}********", requestContextPath);
+        logger.info("*********requestServletPath: {}*********", requestServletPath);
+        logger.info("*********requestPathInfo: {}*************", requestPathInfo);
+        logger.info("*********requestQueryString: {}", requestQueryString);
+
+        if(requestHeaders != null){
+            logger.info("*********Request Headers******************");
+            for(String key : requestHeaders.keySet()){
+                logger.info("Header name: {}, Header Value={}", key, requestHeaders.get(key));
+            }
+        }
+
+        logger.info("*********Request Host and Port Object: {}", requestHostAndPortDetail);
+
+        if(sessionAttributeMap != null){
+            logger.info("*********Session Attributes******************");
+            for(String key : sessionAttributeMap.keySet()){
+                logger.info("Attr name: {}, Attr value={}", key, sessionAttributeMap.get(key));
+            }
+        }
+
+        logger.info("*********************Exit ServletMessageSupplier()***********************");
+
+
     }
 
     @Override

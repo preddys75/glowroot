@@ -53,16 +53,26 @@ import org.glowroot.ui.CommonHandler.CommonResponse;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // loadOnStartup is needed so that gRPC listener starts right away
 @WebServlet(value = "/*", loadOnStartup = 0)
 @SuppressWarnings("serial")
 public class GlowrootServlet extends HttpServlet {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlowrootServlet.class);
 
     private volatile @MonotonicNonNull CentralModule centralModule;
     private volatile @MonotonicNonNull CommonHandler commonHandler;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
+        
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*********************Enter init()***********************");
+        
         try {
             File centralDir = getCentralDir();
             File propFile = new File(centralDir, "glowroot-central.properties");
@@ -74,8 +84,15 @@ public class GlowrootServlet extends HttpServlet {
                     CentralModule.createForServletContainer(centralDir, config.getServletContext());
             commonHandler = centralModule.getCommonHandler();
         } catch (Exception e) {
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("*********************Exception caught, exiting init()***********************");
             throw new ServletException(e);
         }
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*********************Exiting init()***********************");
     }
 
     @Override
@@ -91,8 +108,22 @@ public class GlowrootServlet extends HttpServlet {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
         CommonResponse commonResponse;
+
+        /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("*********************Enter service()***********************");
+
+        logger.info("******HttpServletRequest: " + request);
+        logger.info("********************************************************************************");
+        logger.info("******HttpServletResponse: " + response);
+        logger.info("********************************************************************************");
+        
+
+
         try {
             commonResponse = checkNotNull(commonHandler).handle(new ServletReq(request));
+            logger.info("******CommonResponse: " + commonResponse);
+            logger.info("********************************************************************************");
         } catch (Exception e) {
             throw new ServletException(e);
         }
@@ -131,8 +162,14 @@ public class GlowrootServlet extends HttpServlet {
                 out.flush();
             }
         } else {
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("*********************Exception caught, Exiting service()***********************");
             throw new IllegalStateException("Unexpected content: " + content.getClass().getName());
         }
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*********************Exiting service()***********************");
     }
 
     private static File getCentralDir() throws IOException {

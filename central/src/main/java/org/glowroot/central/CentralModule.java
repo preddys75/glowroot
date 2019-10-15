@@ -894,6 +894,7 @@ public class CentralModule {
         throw lastException;
     }
 
+    //CHECK
     private static Cluster createCluster(CentralConfiguration centralConfig,
             TimestampGenerator defaultTimestampGenerator) {
         Cluster.Builder builder = Cluster.builder()

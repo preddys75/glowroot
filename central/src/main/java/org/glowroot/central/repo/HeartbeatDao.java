@@ -29,6 +29,7 @@ import org.glowroot.common.util.Clock;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
+//CHECK
 public class HeartbeatDao {
 
     static final int EXPIRATION_HOURS = 24;

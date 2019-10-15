@@ -60,10 +60,19 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     private OptionalThreadContextImpl(TransactionService transactionService,
             ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
             int rootSuppressionKeyId) {
+       
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*********************Enter OptionalThreadContextImpl()***********************");
+        
         this.transactionService = transactionService;
         this.threadContextHolder = threadContextHolder;
         this.rootNestingGroupId = rootNestingGroupId;
         this.rootSuppressionKeyId = rootSuppressionKeyId;
+
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*********************Exit OptionalThreadContextImpl()***********************");
     }
 
     @Override
@@ -218,11 +227,15 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     public void setTransactionType(@Nullable String transactionType, int priority) {
         /*ADDED*/
         logger.info("********************************************************************************");
-        logger.info("setTransactionType() -- transactionType: {}, priority: {}", transactionType, priority);
+        logger.info("Enter setTransactionType() -- transactionType: {}, priority: {}", transactionType, priority);
 
         if (threadContext != null) {
             threadContext.setTransactionType(transactionType, priority);
         }
+
+         /*ADDED*/
+         logger.info("********************************************************************************");
+         logger.info("*****************Exit setTransactionType()***************************************");
     }
 
     @Override

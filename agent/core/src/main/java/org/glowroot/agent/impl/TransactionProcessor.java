@@ -198,7 +198,13 @@ public class TransactionProcessor {
             }
         }
 
+        //<MARK - trace>
         private void processOne() throws InterruptedException {
+
+            /*ADDED*/
+            // logger.info("********************************************************************************");
+            // logger.info("***************Entering processOne()**************************************");
+
             PendingTransaction pendingTransaction = head.next;
             if (pendingTransaction == null) {
                 if (clock.currentTimeMillis() > activeIntervalCollector.getCaptureTime()) {
@@ -215,9 +221,16 @@ public class TransactionProcessor {
             Transaction transaction = checkNotNull(pendingTransaction.transaction);
             transaction.setCaptureTime(pendingTransaction.captureTime);
 
+            //<MARK>
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("****About to call collectTrace with pnding transaction: {}**********", transaction);
+
+
             // send to the trace collector before removing from transaction registry so that the
             // trace collector can cover the gap (via TraceCollector.getPendingTransactions())
             // between removing the transaction from the registry and storing it
+            //<MARK - trace, calls TraceCollector>
             traceCollector.collectTrace(transaction);
 
             transaction.removeFromActiveTransactions();
@@ -235,6 +248,10 @@ public class TransactionProcessor {
                 flushAndResetActiveIntervalCollector(pendingTransaction.captureTime);
             }
             activeIntervalCollector.add(transaction);
+
+            /*ADDED*/
+            logger.info("********************************************************************************");
+            logger.info("***************Exiting processOne()**************************************");
         }
 
         private void maybeEndOfInterval() {

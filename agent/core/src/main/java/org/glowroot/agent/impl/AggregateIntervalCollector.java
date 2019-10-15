@@ -42,8 +42,14 @@ import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 
 public class AggregateIntervalCollector {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
     private static final String LIMIT_EXCEEDED_BUCKET = "LIMIT EXCEEDED BUCKET";
 
@@ -59,11 +65,21 @@ public class AggregateIntervalCollector {
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
             int maxTransactionAggregates, int maxQueryAggregates, int maxServiceCallAggregates,
             Clock clock) {
+                
+        logger.info("****************Entry AggregateIntervalCollector()***************************");
+
+        
         captureTime = CaptureTimes.getRollup(currentTime, aggregateIntervalMillis);
         this.maxTransactionAggregates = maxTransactionAggregates;
         this.maxQueryAggregates = maxQueryAggregates;
         this.maxServiceCallAggregates = maxServiceCallAggregates;
         this.clock = clock;
+
+        logger.info("Constructor values: currentTime: {}, aggregateIntervalMillis: {}, maxTransactionAggregates: {}, maxQueryAggregates: {}, maxServiceCallAggregates: {}, clock: {}", currentTime, aggregateIntervalMillis, maxTransactionAggregates, maxQueryAggregates, maxServiceCallAggregates, clock);
+
+        logger.info("****************Exit AggregateIntervalCollector()***************************");
+
+       
     }
 
     public long getCaptureTime() {
@@ -71,7 +87,13 @@ public class AggregateIntervalCollector {
     }
 
     public void add(Transaction transaction) {
+
+        logger.info("****************Entry add()***************************");
+
         IntervalTypeCollector typeCollector = typeCollectors.get(transaction.getTransactionType());
+
+        
+
         if (typeCollector == null) {
             // don't need to worry about race condition here because add() is only called from a
             // single thread (TransactionProcessorLoop)
@@ -79,6 +101,8 @@ public class AggregateIntervalCollector {
             typeCollectors.put(transaction.getTransactionType(), typeCollector);
         }
         typeCollector.add(transaction);
+
+        logger.info("****************Exit add()***************************");
     }
 
     public void mergeOverallSummaryInto(OverallSummaryCollector collector, String transactionType) {
