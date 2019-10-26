@@ -15,6 +15,10 @@
  */
 package org.glowroot.agent.central;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -22,11 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Stopwatch;
-import io.grpc.stub.StreamObserver;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
@@ -89,11 +90,12 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRespons
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.UnknownRequestResponse;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import io.grpc.stub.StreamObserver;
 
+//MARK
 class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceObserver.class);
@@ -124,6 +126,12 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
             LiveTraceRepositoryImpl liveTraceRepository, String agentId,
             AtomicBoolean inConnectionFailure, SharedQueryTextLimiter sharedQueryTextLimiter) {
+
+         /*ADDED*/
+        logger.info("********************************************************************************");
+        logger.info("***************Entering DownstreamServiceObserver()**************************************");
+        logger.info("*******Agent  Id: {}", agentId);
+        
         this.centralConnection = centralConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
@@ -145,7 +153,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         /*ADDED*/
         logger.info("********************************************************************************");
         logger.info("***************Entering onNext()**************************************");
-        logger.info("*******Request: {}", request);
+        logger.info("*******CentralRequest: {}", request);
 
         inMaybeConnectionFailure.set(false);
         boolean errorFixed = inConnectionFailure.getAndSet(false);
@@ -157,6 +165,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 }
             });
         }
+
+
         if (request.getMessageCase() == MessageCase.HELLO_ACK) {
             return;
         }
@@ -167,8 +177,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         }
 
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Exiting onNext()**************************************");
+        logger.info(new StringBuilder("*****************************************************************************\n").
+                                      append("***************Exiting onNext()**************************************").toString());
+        
     }
 
     @Override

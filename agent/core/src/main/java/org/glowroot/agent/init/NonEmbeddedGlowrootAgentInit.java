@@ -47,6 +47,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+//MARK
 public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     // log startup messages using logger name "org.glowroot"

@@ -21,17 +21,22 @@ import java.util.Locale;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
-import org.immutables.value.Value;
-
 import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.TraceRepository.TraceQuery;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class TracePointQueryBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(TracePointQueryBuilder.class);
+
 
     private final TraceKind traceKind;
     private final TraceQuery query;
@@ -44,6 +49,8 @@ class TracePointQueryBuilder {
         this.query = query;
         this.filter = filter;
         this.limit = limit;
+
+        logger.info("%%%%%%%%%%%%%%USED IN MAINLINE!!!!%%%%%%%%%%%%%%%%%%%%%%%%%%");
     }
 
     // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped

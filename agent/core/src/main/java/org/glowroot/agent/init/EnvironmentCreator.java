@@ -41,6 +41,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Enviro
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.ProcessInfo;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 
+//MARK
 public class EnvironmentCreator {
 
     private static final Logger logger = LoggerFactory.getLogger(EnvironmentCreator.class);

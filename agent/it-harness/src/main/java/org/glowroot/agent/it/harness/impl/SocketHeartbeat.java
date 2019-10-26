@@ -15,6 +15,9 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -22,9 +25,6 @@ import java.net.Socket;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 class SocketHeartbeat implements Runnable {
 
@@ -68,5 +68,7 @@ class SocketHeartbeat implements Runnable {
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
+        /*ADDED*/
+        logger.info("********Bottom of SocketHeartBeatLoop********************");
     }
 }

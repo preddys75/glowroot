@@ -15,6 +15,14 @@
  */
 package org.glowroot.central;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+//ADDED
+import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -28,15 +36,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
-import io.grpc.stub.StreamObserver;
+import com.google.protobuf.CodedOutputStream;
+
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.serial.Serial;
-import org.immutables.value.Value;
-import org.infinispan.util.function.SerializableFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.DistributedExecutionMap;
 import org.glowroot.common.live.ImmutableEntries;
@@ -103,13 +106,17 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
+import org.infinispan.util.function.SerializableFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import io.grpc.stub.StreamObserver;
 
+
+//CHECK - INSTRUMENT
+//LOG
 class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(DownstreamServiceImpl.class);
@@ -126,7 +133,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     void stopSendingDownstreamRequests() {
+        
+        //ADDED - edited
+        logger.info("******************stopSendingDownstreamRequests(): obtaining shuttingDownLock.writeLock().lock()***********");
         shuttingDownLock.writeLock().lock();
+         //ADDED - edited
+        logger.info("******************stopSendingDownstreamRequests(): OBTAINED shuttingDownLock.writeLock().lock()***********");
     }
 
     @Override
@@ -137,13 +149,20 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     // returns true if agent was updated
     boolean updateAgentConfigIfConnected(String agentId, AgentConfig agentConfig) throws Exception {
         // no need to retry on shutting-down response
-        return connectedAgents.execute(agentId, 60, new SendDownstreamFunction(
+        boolean retVal =  connectedAgents.execute(agentId, 60, new SendDownstreamFunction(
                 CentralRequest.newBuilder()
                         .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
                                 .setAgentConfig(agentConfig))
                         .build(),
                 60))
                 .isPresent();
+
+        //ADDED
+        logger.info(new StringBuilder("***************updateAgentConfigIfConnected()********************************").
+                              append("SendDownstreamFunction() returned: " + retVal).
+                              append((retVal) ? "****Updated config with: " + agentConfig : "Did not update config").toString());
+        
+        return retVal;
     }
 
     boolean isAvailable(String agentId) throws Exception {
@@ -154,15 +173,21 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             java.util.Optional<AgentResult> optional =
                     connectedAgents.execute(agentId, 30, new IsAvailableFunction());
             if (!optional.isPresent()) {
+                //ADDED - edited
+                logger.info("**********isAvailable(): false** -> !optional.isPresent()***********");
                 return false;
             }
             AgentResult result = optional.get();
             if (!result.shuttingDown()) {
+                //ADDED - edited
+                logger.info("**********isAvailable(): true**  -> !result.shuttingDown()***********");
                 return true;
             }
             MILLISECONDS.sleep(100);
         }
         // received shutting-down response for 5+ seconds
+        //ADDED - edited
+        logger.info("**********isAvailable(): exited while loop, exiting method -> returning false*************");
         return false;
     }
 
@@ -170,45 +195,76 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance())
                 .build());
+        //ADDED - edited
+        logger.info("**Exiting threadDump() -> ****agentId -> {}, ****threadDumppResponse(): {}*************", 
+                    agentId, responseWrapper.getThreadDumpResponse());
+
         return responseWrapper.getThreadDumpResponse().getThreadDump();
     }
 
     String jstack(String agentId) throws Exception {
+        //ADDED 
+        logger.info("****Enter jstack() -> agentId: {}", agentId);
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setJstackRequest(JstackRequest.getDefaultInstance())
                 .build());
         JstackResponse response = responseWrapper.getJstackResponse();
         if (response.getUnavailableDueToRunningInJre()) {
+            //ADDED 
+            logger.info("**********UnavailableDueToRunningInJreException thrown: *************");
             throw new UnavailableDueToRunningInJreException();
         }
         if (response.getUnavailableDueToRunningInJ9Jvm()) {
+             //ADDED 
+            logger.info("**********UnavailableDueToRunningInJreException thrown: *************");
             // Eclipse OpenJ9 VM or IBM J9 VM
             throw new UnavailableDueToRunningInJ9JvmException();
         }
+         //ADDED 
+        logger.info("**********Exiting jstack() returned: {}, jstack response obj: {}*************", response.getJstack(), response);
         return response.getJstack();
     }
 
     long availableDiskSpaceBytes(String agentId, String directory) throws Exception {
+         //ADDED 
+        logger.info("**********Entering availableDiskSpaceBytes()*************");
         AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
                 .setAvailableDiskSpaceRequest(AvailableDiskSpaceRequest.newBuilder()
                         .setDirectory(directory))
                 .build());
         AvailableDiskSpaceResponse response = responseWrapper.getAvailableDiskSpaceResponse();
         if (response.getDirectoryDoesNotExist()) {
+            //ADDED 
+            logger.info("**********response.getDirectoryDoesNotExist() == true, exception thrown*************");
             throw new DirectoryDoesNotExistException();
         }
+        //ADDED 
+        logger.info("*****Exiting availableDiskSpaceBytes()*****Response obj: {} --> Disk availability returned: {}*************", response, response.getAvailableBytes());
         return response.getAvailableBytes();
     }
 
     HeapDumpFileInfo heapDump(String agentId, String directory) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
-                .setHeapDumpRequest(HeapDumpRequest.newBuilder()
-                        .setDirectory(directory))
-                .build());
+        //ADDED 
+        logger.info("**********Entering heapDump()****directory=={}*********", directory);
+        CentralRequest cr = CentralRequest.newBuilder().setHeapDumpRequest(HeapDumpRequest.newBuilder().setDirectory(directory)).build();
+        HeapDumpRequest hdr = cr.getHeapDumpRequest();
+         //ADDED 
+        logger.info("**********Heap dump request: {}, ***agent id: {}", hdr, agentId);
+        AgentResponse responseWrapper = runOnCluster(agentId, cr);
         HeapDumpResponse response = responseWrapper.getHeapDumpResponse();
+        //ADDED 
+        logger.info("**********Heap dump response: {}, ***agent id: {}", response, agentId);
         if (response.getDirectoryDoesNotExist()) {
             throw new DirectoryDoesNotExistException();
         }
+        //ADDED 
+        //write heapinfo to string buffer for logging
+        HeapDumpFileInfo hdfi = response.getHeapDumpFileInfo();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        CodedOutputStream cos = CodedOutputStream.newInstance(baos);
+        hdfi.writeTo(cos);
+        logger.info("**********Exiting heapDump()********\\nResponse obj: {} --> \\nHeapdump fileinfo returned: {}*************", 
+                  response, baos.toString());
         return response.getHeapDumpFileInfo();
     }
 
@@ -451,15 +507,19 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         }
         // retry up to 5 seconds on shutting-down response to give agent time to reconnect to
         // another cluster node
+        //ADDED
+        logger.info("*****Enter runOnCluster(), agentId={}, timeoutSeconds={}, centralReq=<{}>************", agentId, timeoutSeconds, centralRequest);
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 5) {
             java.util.Optional<AgentResult> optional = connectedAgents.execute(agentId,
                     timeoutSeconds, new SendDownstreamFunction(centralRequest, timeoutSeconds));
             if (!optional.isPresent()) {
+                logger.error("*****<AgentNotConnectedException()> thrown************");
                 throw new AgentNotConnectedException();
             }
             AgentResult result = optional.get();
             Optional<AgentResponse> value = result.value();
+            //result.
             if (value.isPresent()) {
                 AgentResponse response = value.get();
                 if (response
@@ -528,49 +588,76 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         public void onError(Throwable t) {
             logger.debug("{} - {}", t.getMessage(), t);
             if (agentId != null) {
-                logger.info("downstream connection lost with agent: {}", agentId);
+                //ADDED - edited
+                logger.info("*******************downstream connection lost with agent: {}*************", agentId);
                 connectedAgents.remove(agentId, ConnectedAgent.this);
             }
         }
 
         private void onNextInternal(AgentResponse value) {
             if (value.getMessageCase() == AgentResponse.MessageCase.HELLO) {
-                Hello hello = value.getHello();
+                Hello hello = value.getHello();  
+                //ADDED
+                logger.info("*******************Hello Message received: {}*************", value);
                 try {
-                    agentId = grpcCommon.getAgentId(hello.getAgentId(), hello.getPostV09());
+                    agentId = grpcCommon
+               .getAgentId(hello.getAgentId(), hello.getPostV09());
                 } catch (Exception e) {
-                    logger.error("{} - {}",
+                    //ADDED -- edited
+                    logger.error("*************Exception caught getting agent id: {} - {}****************",
                             getAgentIdForLogging(hello.getAgentId(), hello.getPostV09()),
                             e.getMessage(), e);
                     return;
                 }
                 connectedAgents.put(agentId, ConnectedAgent.this);
                 synchronized (requestObserver) {
-                    requestObserver.onNext(CentralRequest.newBuilder()
-                            .setHelloAck(HelloAck.getDefaultInstance())
-                            .build());
+
+                    HelloAck ha = HelloAck.getDefaultInstance();
+
+                    //ADDED
+                    logger.info("****************Hello Ack created: {}*************", ha);
+
+                    CentralRequest cr = CentralRequest.newBuilder()
+                            .setHelloAck(ha).build();
+
+                            
+                    requestObserver.onNext(cr);
+
+                     //ADDED
+                     logger.info("*******************Hello ACk central request: {}*************", cr);
                 }
-                logger.info("downstream connection (re-)established with agent: {}", agentId);
+                //ADDED -- edited
+                logger.info("**************downstream connection (re-)established with agent: {}**************", agentId);
                 return;
             }
             if (agentId == null) {
-                logger.error("first message from agent to downstream service must be HELLO");
+                //ADDED -- edited
+                logger.error("***********AgentId == null, first message from agent to downstream service must be HELLO*************");
                 return;
             }
             long requestId = value.getRequestId();
+            //ADDED -- edited
+            logger.info("**************Agent response --> Request id: {}**************", value.getRequestId());
             ResponseHolder responseHolder = responseHolders.getIfPresent(requestId);
             responseHolders.invalidate(requestId);
             if (responseHolder == null) {
-                logger.error("no response holder for request id: {}", requestId);
+                //ADDED -- edited
+                logger.error("************no response holder for request id: {}******************", requestId);
                 return;
             }
             try {
                 // this shouldn't timeout since it is the other side of the exchange that is waiting
-                responseHolder.response.exchange(value, 1, MINUTES);
+                //ADDED -- edited
+                AgentResponse ar = responseHolder.response.exchange(value, 1, MINUTES);
+                //ADDED
+                logger.info("**************Agent response --> Request id: {}, AgentResponse: {}**************", ar.getRequestId(), ar);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error("{} - {}", agentId, e.getMessage(), e);
+                //ADDED -- edited
+                logger.error("************InterruptedException caught: {} - {}***********", agentId, e.getMessage(), e);
             } catch (TimeoutException e) {
+                //ADDED -- edited
+                logger.error("************TimeoutExcepti caught: {} - {}***********", agentId, e.getMessage(), e);
                 logger.error("{} - {}", agentId, e.getMessage(), e);
             }
         }
@@ -594,36 +681,64 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 int timeoutSeconds) {
             Lock readLock = shuttingDownLock.readLock();
             if (!readLock.tryLock()) {
-                return ImmutableAgentResult.builder()
+                ImmutableAgentResult iar = ImmutableAgentResult.builder()
                         .shuttingDown(true)
                         .build();
+
+                //ADDED
+                logger.info("*****Can't get readLock()**************Incoming -> CentralRequest requestWithoutRequestId: {}*************, ImmutableAgentResponse: <{}>", 
+                            requestWithoutRequestId, iar);
             }
-            try {
+            try {                
+
                 CentralRequest request = CentralRequest.newBuilder(requestWithoutRequestId)
                         .setRequestId(nextRequestId.getAndIncrement())
                         .build();
+
+                //ADDED
+                logger.info("*****Obtained readLock: {}*************", request);
+
                 ResponseHolder responseHolder = new ResponseHolder();
                 responseHolders.put(request.getRequestId(), responseHolder);
+                
+                //ADDED
+                logger.info("*****Response Holder: {}*************", responseHolder);
+                
                 // synchronization required since individual StreamObservers are not thread-safe
                 synchronized (requestObserver) {
                     requestObserver.onNext(request);
+                    //ADDED
+                    logger.info("*****Response Holder {}*************", responseHolder);
+                
                 }
                 // timeout is in case agent never responds
                 // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
                 AgentResponse response = responseHolder.response
                         .exchange(AgentResponse.getDefaultInstance(), timeoutSeconds, SECONDS);
-                return ImmutableAgentResult.builder()
+                
+                //ADDED
+                logger.info("*****************Response after exchange: {}***************", response);
+                ImmutableAgentResult iar = ImmutableAgentResult.builder()
                         .value(response)
                         .build();
+                return iar;
             } catch (InterruptedException e) {
+                //ADDED
+                logger.info("**********InterruptedException caught: {}", e);
                 Thread.currentThread().interrupt();
-                return ImmutableAgentResult.builder()
+                ImmutableAgentResult iar = ImmutableAgentResult.builder()
                         .interrupted(true)
                         .build();
+                logger.info("**********Interrupted Agent Result: {}", iar);
+                return iar;
             } catch (TimeoutException e) {
-                return ImmutableAgentResult.builder()
+                //ADDED
+                logger.info("**********TimeoutException caught: {}", e);
+                ImmutableAgentResult iar =ImmutableAgentResult.builder()
                         .timeout(true)
                         .build();
+                logger.info("**********Timeout Agent Result: {}", iar);
+                return iar;
             } finally {
                 readLock.unlock();
             }
@@ -695,6 +810,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
 
         @Override
         public AgentResult apply(ConnectedAgent connectedAgent) {
+             //ADDED
+            logger.info("*****static class SendDownstreamFunction.apply(), sendDownstream(): connectedAgent: {}*************", connectedAgent);
+
             return connectedAgent.sendDownstream(centralRequest, timeoutSeconds);
         }
     }

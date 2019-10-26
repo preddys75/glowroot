@@ -35,6 +35,7 @@ import org.glowroot.agent.weaving.BootstrapMetaHolders;
 import org.glowroot.agent.weaving.GenericMessageSupplier;
 import org.glowroot.agent.weaving.MessageTemplateImpl;
 
+//MARK
 public class BytecodeServiceImpl implements BytecodeService {
 
     private static final boolean DEBUG_MAIN_CLASS = Boolean.getBoolean("glowroot.debug.mainClass");

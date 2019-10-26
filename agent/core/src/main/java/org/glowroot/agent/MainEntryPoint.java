@@ -63,6 +63,8 @@ import org.glowroot.common.util.Version;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+//MARK
+//IMPORTANT
 public class MainEntryPoint {
 
     private static final boolean PRE_CHECK_LOADED_CLASSES =

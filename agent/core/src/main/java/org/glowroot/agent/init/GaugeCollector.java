@@ -65,6 +65,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+//MARK
 class GaugeCollector extends ScheduledRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);

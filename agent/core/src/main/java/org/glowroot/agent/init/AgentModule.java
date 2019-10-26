@@ -81,6 +81,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+//MARK
 public class AgentModule {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentModule.class);
@@ -425,6 +426,8 @@ public class AgentModule {
     // now init plugins to give them a chance to do something in their static initializer
     // e.g. append their package to jboss.modules.system.pkgs
     private static void initPlugins(List<PluginDescriptor> pluginDescriptors) {
+        //ADDED
+        
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {

@@ -15,24 +15,28 @@
  */
 package org.glowroot.agent.init;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @VisibleForTesting
 public class CollectorProxy implements Collector {
+
+    private static final Logger logger = LoggerFactory.getLogger(CollectorProxy.class);
 
     private volatile @MonotonicNonNull Collector instance;
 
@@ -52,6 +56,7 @@ public class CollectorProxy implements Collector {
                 checkNotNull(instance).collectAggregates(aggregateReader);
             }
         } else {
+            logger.info("**********Calling collectAggregates(): aggregateReader -> {}*********", aggregateReader);
             instance.collectAggregates(aggregateReader);
         }
     }
@@ -63,6 +68,10 @@ public class CollectorProxy implements Collector {
                 checkNotNull(instance).collectGaugeValues(gaugeValues);
             }
         } else {
+            logger.info("**********Calling collectGaugeValues()*********");
+            for(GaugeValue gv : gaugeValues){
+                logger.info("**********GaugeValue -> {}*********", gv);
+             }
             instance.collectGaugeValues(gaugeValues);
         }
     }
@@ -74,6 +83,7 @@ public class CollectorProxy implements Collector {
                 checkNotNull(instance).collectTrace(traceReader);
             }
         } else {
+            logger.info("**********Calling collectTrace(): traceReader -> {}*********", traceReader);
             instance.collectTrace(traceReader);
         }
     }

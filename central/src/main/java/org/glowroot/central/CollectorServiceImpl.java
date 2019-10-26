@@ -15,6 +15,11 @@
  */
 package org.glowroot.central;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,13 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
+
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AgentConfigDao;
@@ -75,11 +76,11 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
 
 class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase {
 
@@ -422,6 +423,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             public void run() {
                 collectAggregatesUnderThrottle(agentId, postV09, captureTime, sharedQueryTexts,
                         aggregatesByTypeList, responseObserver);
+                
             }
         });
         //ADDED
@@ -848,10 +850,18 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         private void onNextInternal(AggregateStreamMessage value) {
             switch (value.getMessageCase()) {
                 case STREAM_HEADER:
+                    //ADDED
+                    logger.info("******************************************************************************");
+                    logger.info("onNextInternal: value.getMessageCase -> {}", value.getMessageCase());
+                   
                     streamHeader = value.getStreamHeader();
                     break;
                 case SHARED_QUERY_TEXT:
-                    sharedQueryTexts.add(value.getSharedQueryText());
+                    //ADDED
+                    logger.info("******************************************************************************");
+                    logger.info("onNextInternal: value.getSharedQueryText() -> {}", value.getSharedQueryText());
+                   
+                    sharedQueryTexts.add(value.getSharedQueryText());                     
                     break;
                 case OVERALL_AGGREGATE:
                     OverallAggregate overallAggregate = value.getOverallAggregate();
@@ -859,8 +869,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
                     //ADDED
                     logger.info("******************************************************************************");
-                    logger.info("onNextInternal: overallAggregate: {}: transactionType: {}", overallAggregate, transactionType);
-
+                    logger.info("onNextInternal: transactionType: {}, overallAggregate: {}: ", transactionType, overallAggregate);
+                    
 
                     aggregatesByTypeMap.put(transactionType, OldAggregatesByType.newBuilder()
                             .setTransactionType(transactionType)
@@ -868,6 +878,13 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                     break;
                 case TRANSACTION_AGGREGATE:
                     TransactionAggregate transactionAggregate = value.getTransactionAggregate();
+
+                     //ADDED
+                    String transactionTypee = transactionAggregate.getTransactionType();
+                    logger.info("******************************************************************************");
+                    logger.info("onNextInternal: transactionType: {}, transactionAggregate: {}", transactionTypee, transactionAggregate);
+                     
+
                     OldAggregatesByType.Builder builder = checkNotNull(
                             aggregatesByTypeMap.get(transactionAggregate.getTransactionType()));
                     builder.addTransactionAggregate(OldTransactionAggregate.newBuilder()
@@ -876,6 +893,10 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                             .build());
                     break;
                 default:
+                    //ADDED
+                    logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    logger.error("onNextInternal: No matching message!!!!!!!!!!!!!!!!!!!message: " +
+                    value.getMessageCase());                
                     throw new RuntimeException("Unexpected message: " + value.getMessageCase());
             }
         }
