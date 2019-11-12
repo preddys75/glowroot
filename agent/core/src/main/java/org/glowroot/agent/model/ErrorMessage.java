@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.model;
 
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
@@ -163,4 +164,5 @@ public abstract class ErrorMessage {
             return 0;
         }
     }
+    
 }

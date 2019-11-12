@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -454,6 +455,18 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
     private void endWithErrorInternal(@Nullable String message, @Nullable Throwable t) {
         ErrorMessage errorMessage = ErrorMessage.create(message, t,
                 threadContext.getTransaction().getThrowableFrameLimitCounter());
+        
+        //ADDED
+        String logVal = new StringBuilder().
+                    append("***************TraceEntryImpl endWithErrorInternal()**************************************\n").
+                    append(MessageFormat.format("errorMessage.message: {0}\n", 
+                     new Object[]{errorMessage.message()})).
+                     append(MessageFormat.format("errorMessage.throwable: {0}\n", 
+                     new Object[]{errorMessage.throwable()})).toString();
+
+        logger.info(logVal);
+        logger.info("***TraceReader traceReader entering collectTrace -> {}", traceReader);
+
         endInternal(ticker.read(), errorMessage);
     }
 
@@ -530,5 +543,20 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
             return errorMessage.message();
         }
         return checkNotNull(super.toString());
+    }
+
+    public String ToString(){
+
+        String retVal = new StringBuilder(). 
+        append(MessageFormat.format("getErrorMessage(): {0}\n", 
+              new Object[]{getErrorMessage()})).
+
+
+
+              toString();
+
+        return retVal;
+
+
     }
 }

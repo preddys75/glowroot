@@ -16,6 +16,7 @@
 package org.glowroot.agent.central;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -138,6 +139,23 @@ class CentralConnection {
                 ThreadFactories.create("Glowroot-Collector-Retry"));
         this.inConnectionFailure = inConnectionFailure;
         this.collectorAddress = collectorAddress;
+    }
+
+    //ADDED
+    public String ToString(){
+        
+        return new StringBuilder().append(MessageFormat.format("EventLoopGroup: {0}\n", new Object[]{eventLoopGroup})).
+           append(MessageFormat.format("ExecutorService: {0}\n", new Object[]{channelExecutor})).
+           append(MessageFormat.format("ManagedChannel: {0}\n", new Object[]{channel})).
+           append(MessageFormat.format("ScheduledExecutorService: {0}\n", new Object[]{retryExecutor})).
+           append(MessageFormat.format("AtomicBoolean: {0}\n", new Object[]{inConnectionFailure})).
+           append(MessageFormat.format("Random: {0}\n", new Object[]{random})).
+           append(MessageFormat.format("RateLimitedLogger: {0}\n", new Object[]{connectionErrorLogger})).
+           append(MessageFormat.format("String: {0}\n", new Object[]{collectorAddress})).
+           append(MessageFormat.format("boolean: {0}\n", new Object[]{inMaybeInitFailure})).
+           append(MessageFormat.format("boolean: {0}\n", new Object[]{initCallSucceeded})).
+           append(MessageFormat.format("boolean: {0}\n", new Object[]{ closed})).toString();
+
     }
 
     boolean suppressLogCollector() {

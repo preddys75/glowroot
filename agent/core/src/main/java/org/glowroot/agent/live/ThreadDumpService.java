@@ -52,8 +52,8 @@ class ThreadDumpService {
 
     ThreadDump getThreadDump() {
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("In getThreadDump()");
+        logger.info("********************In getThreadDump()*******************************************");
+        
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         List<ThreadContextImpl> activeThreadContexts = getActiveThreadContexts();
         @Nullable
@@ -62,13 +62,22 @@ class ThreadDumpService {
         long currentThreadId = Thread.currentThread().getId();
         Map<Long, ThreadInfo> unmatchedThreadInfos = Maps.newHashMap();
         ThreadInfo currentThreadInfo = null;
+        //ADDED
+        logger.info("**************Printing ThreadInfo Arrays***********************");
         for (ThreadInfo threadInfo : threadInfos) {
             if (threadInfo == null) {
                 continue;
             }
+            //ADDED
+            logger.info("****Thread Id: {}, and threadInfo\n: {}\n", threadInfo.getThreadId(), threadInfo.toString());
             if (threadInfo.getThreadId() == currentThreadId) {
+                logger.info("****threadInfo.getThreadId(): <{}> == currentThreadId: <{}>\n **Setting currentThreadInfo = threadInfo", 
+                           threadInfo.getThreadId(), currentThreadId);
                 currentThreadInfo = threadInfo;
             } else {
+                //ADDED
+                logger.info("****threadInfo.getThreadId(): <{}> != currentThreadId: <{}>\n **Putting in unmatched list**", 
+                           threadInfo.getThreadId(), currentThreadId);
                 unmatchedThreadInfos.put(threadInfo.getThreadId(), threadInfo);
             }
         }
@@ -76,6 +85,8 @@ class ThreadDumpService {
         // active thread contexts for a given transaction are already sorted by age
         // so that main thread context will always appear first within a given matched transaction,
         // and its auxiliary threads will be then sorted by age
+        //ADDED
+        logger.info("*******Looping through activeThreadContexts*****");
         for (ThreadContextImpl threadContext : activeThreadContexts) {
             if (!threadContext.isActive()) {
                 continue;
@@ -119,7 +130,10 @@ class ThreadDumpService {
     }
 
     private List<ThreadContextImpl> getActiveThreadContexts() {
+        //ADDED
+        logger.info("*********Entering getActiveThreadContexts()********");
         List<ThreadContextImpl> activeThreadContexts = Lists.newArrayList();
+        logger.info("**********Getting all transactions from transaction registry********");
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
             if (mainThreadContext.isActive()) {

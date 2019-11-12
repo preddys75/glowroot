@@ -104,6 +104,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDumpResponse;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.immutables.serial.Serial;
@@ -113,6 +114,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.grpc.stub.StreamObserver;
+
+//ADDED
+import org.glowroot.common.util.GrObjToString;
 
 
 //CHECK - INSTRUMENT
@@ -130,6 +134,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     DownstreamServiceImpl(GrpcCommon grpcCommon, ClusterManager clusterManager) {
         this.grpcCommon = grpcCommon;
         connectedAgents = clusterManager.createDistributedExecutionMap("connectedAgents");
+
     }
 
     void stopSendingDownstreamRequests() {
@@ -149,6 +154,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     // returns true if agent was updated
     boolean updateAgentConfigIfConnected(String agentId, AgentConfig agentConfig) throws Exception {
         // no need to retry on shutting-down response
+        //ADDED - edited
+        logger.info("******************updateAgentConfigIfConnected(): agentId: {},\n agentConfig: {}***********", agentId, agentConfig);
+
         boolean retVal =  connectedAgents.execute(agentId, 60, new SendDownstreamFunction(
                 CentralRequest.newBuilder()
                         .setAgentConfigUpdateRequest(AgentConfigUpdateRequest.newBuilder()
@@ -192,14 +200,19 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     }
 
     ThreadDump threadDump(String agentId) throws Exception {
-        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
-                .setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance())
-                .build());
-        //ADDED - edited
-        logger.info("**Exiting threadDump() -> ****agentId -> {}, ****threadDumppResponse(): {}*************", 
-                    agentId, responseWrapper.getThreadDumpResponse());
 
-        return responseWrapper.getThreadDumpResponse().getThreadDump();
+        CentralRequest cr = CentralRequest.newBuilder().setThreadDumpRequest(ThreadDumpRequest.getDefaultInstance()).build();
+
+        AgentResponse responseWrapper = runOnCluster(agentId, cr);
+        //ADDED - edited
+        ThreadDumpResponse tdr = responseWrapper.getThreadDumpResponse();
+        logger.info("**Exiting threadDump() -> ****agentId -> {}, ****threadDumppResponse(): {}*************", 
+                    agentId, tdr);
+
+        logger.info("***************Thread Dump received from agent********:\n {}", 
+                    GrObjToString.ThreadDumpToString(tdr.getThreadDump()));
+
+        return tdr.getThreadDump();
     }
 
     String jstack(String agentId) throws Exception {
@@ -509,6 +522,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         // another cluster node
         //ADDED
         logger.info("*****Enter runOnCluster(), agentId={}, timeoutSeconds={}, centralReq=<{}>************", agentId, timeoutSeconds, centralRequest);
+        //String callerInfo = GrObjToString.getCallerInfo(Thread.currentThread().getStackTrace()[2]);
+        String crString = GrObjToString.CentralRequestToString(centralRequest);
+        
+        //logger.info("**********Caller information********************\n{}", callerInfo);
+        logger.info("**********Printable contents of CentralRequest********************\n{}", crString);
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 5) {
             java.util.Optional<AgentResult> optional = connectedAgents.execute(agentId,

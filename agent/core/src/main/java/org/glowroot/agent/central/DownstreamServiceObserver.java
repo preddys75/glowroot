@@ -19,6 +19,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.io.ByteArrayOutputStream;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -26,6 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Stopwatch;
+import com.google.protobuf.CodedOutputStream;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
@@ -38,6 +41,7 @@ import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJ9JvmExc
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
+import org.glowroot.common.util.GrObjToString;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Throwables;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
@@ -145,15 +149,25 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         this.sharedQueryTextLimiter = sharedQueryTextLimiter;
         scheduledRetryExecutor = Executors.newSingleThreadScheduledExecutor(
                 ThreadFactories.create("Glowroot-Downstream-Retry"));
+
+        //ADDED        
+        logger.info(new StringBuilder("**********Printable contents of DownstreamServiceObserver()********************").
+                    append(MessageFormat.format("this.centralConnection: {0}\n", this.centralConnection.ToString())).
+                    append(MessageFormat.format("this.configReadOnly: {0}\n", new Object[]{this.configReadOnly})).
+                    append(MessageFormat.format("this.agentId: {0}\n", new Object[]{this.agentId})).
+                    append(MessageFormat.format("this.inConnectionFailure: {0}\n", new Object[]{this.inConnectionFailure})).
+                    append(MessageFormat.format("this.sharedQueryTextLimiter: {0}\n", new Object[]{this.sharedQueryTextLimiter})).
+                    append("**********Exiting DownstreamServiceObserver()********************").                    
+                    toString());
     }
 
     @Override
-    public void onNext(CentralRequest request) {
+    public void onNext(CentralRequest request) {        
 
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Entering onNext()**************************************");
-        logger.info("*******CentralRequest: {}", request);
+        logger.info(new StringBuilder("********************************************************************************\n").
+                    append("***************Entering onNext()**************************************\n").
+                    append(MessageFormat.format("*******CentralRequest: {0}", GrObjToString.CentralRequestToString(request))).toString());
 
         inMaybeConnectionFailure.set(false);
         boolean errorFixed = inConnectionFailure.getAndSet(false);
@@ -161,16 +175,22 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             centralConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    logger.info("re-established connection to the central collector");
+                    //ADDED
+                    //logger.info("re-established connection to the central collector");
+                    logger.info("*********re-established connection to the central collector***********");
                 }
             });
         }
 
 
         if (request.getMessageCase() == MessageCase.HELLO_ACK) {
+            //ADDED
+            logger.info("request.getMessageCase() == MessageCase.HELLO_ACK, exiting");
             return;
         }
         try {
+            //ADDED
+            logger.info("request.getMessageCase() == {}, calling nextInternal()", request.getMessageCase());
             onNextInternal(request);
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
@@ -190,6 +210,10 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     @Override
     public void onError(final Throwable t) {
+
+        //ADDED
+        logger.info("****Entering onError(), exception: {}", GrObjToString.ExceptionToString(t));
+
         if (!inMaybeConnectionFailure.getAndSet(true)) {
             // one free pass
             // try immediate re-connect once in case this is just node of central collector cluster
@@ -203,7 +227,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 public void run() {
                     logger.warn("lost connection to the central collector (will keep"
                             + " trying to re-establish...): {}", Throwables.getBestMessage(t));
-                    logger.debug(t.getMessage(), t);
+                    //ADDED
+                    logger.info(t.getMessage(), GrObjToString.ExceptionToString(t));
                 }
             });
         }
@@ -214,8 +239,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     void connectAsync() {
          /*ADDED*/
-         logger.info("********************************************************************************");
-         logger.info("***************Entering connectAsync()**************************************");
+         logger.info(new StringBuilder("********************************************************************************\n").
+         append("***************Entering connectAsync()**************************************\n").toString());
         
         // these are async so never fail, onError() will be called on failure
         StreamObserver<AgentResponse> responseObserver = downstreamServiceStub.connect(this);
@@ -226,15 +251,16 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .build());
 
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Exiting connectAsync()**************************************");
+        logger.info(new StringBuilder("********************************************************************************\n").
+         append("***************Exiting connectAsync()**************************************\n").toString());
     }
 
     private void onNextInternal(CentralRequest request) throws InterruptedException {
 
         /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Entering onNextInternal()**************************************");
+        logger.info(new StringBuilder("********************************************************************************\n").
+              append("***************Entering onNextInternal()**************************************\n").
+              append(MessageFormat.format("request.getMessageCase() == {0}\n", request.getMessageCase())).toString());
 
         StreamObserver<AgentResponse> responseObserver = currResponseObserver;
         while (responseObserver == null) {
@@ -336,7 +362,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             StreamObserver<AgentResponse> responseObserver) {
          /*ADDED*/
          logger.info("********************************************************************************");
-         logger.info("***************Entering updateConfigAndRespond()**************************************");
+         logger.info("***************Entering updateConfigAndRespond()********************************");
  
         if (configReadOnly) {
             // the central collector should observe the InitMessage AgentConfig's config_read_only
@@ -370,11 +396,14 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         ThreadDump threadDump;
         try {
             threadDump = liveJvmService.getThreadDump("");
+            logger.info(GrObjToString.ThreadDumpToString(threadDump));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             sendExceptionResponse(request, responseObserver);
             return;
-        }
+        }   
+       
+
         /*ADDED*/
         logger.info("********************************************************************************");
         logger.info("*****Good request, action completed, calling responseObserver.onNext() Exiting threadDumpAndRespond()****");
