@@ -313,12 +313,15 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             StreamObserver<EmptyMessage> responseObserver) {
 
         //ADDED
-        logger.info("********************************************************************************");
-        logger.info("*************Entering collectTraceStream()*************************************");
+        StringBuilder sb = new StringBuilder("********************************************************************************\n").
+                                        append("*************Entering collectTraceStream()*************************************\n");
+        logger.info(sb.toString());
         TraceStreamObserver retVal = new TraceStreamObserver(responseObserver);
-        logger.info("****StreamObserver<EmptyMessage> responseObserver: {}", responseObserver);
-        logger.info("*************Exiting collectTraceStream()************************************");
-        logger.info("********************************************************************************");
+        sb = new StringBuilder("****StreamObserver<EmptyMessage> responseObserver: " + responseObserver.toString() + "\n").
+           append("*************Exiting collectTraceStream()************************************\n").
+           append("********************************************************************************\n");
+
+        logger.info(sb.toString());
 
         return retVal;
     }
@@ -458,11 +461,13 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             StreamObserver<EmptyMessage> responseObserver) {
 
         //ADDED
-        logger.info("********************************************************************************");
-        logger.info("*************Entering throttledCollectTrace()*************************************");
-        logger.info("****agentId=<{}>, postV09=<{}>, trace -> {}", agentId, postV09, trace);
-        logger.info("--Calling throttle()----------------------------------------------");
+        StringBuilder sb = new StringBuilder("********************************************************************************").
+        append("*************Entering throttledCollectTrace()*************************************").
+        append("****agentId=" + agentId +", postV09=" + postV09 + "\n").
+        append("--Trace ==\n" + GrCentralObjToString.TraceToString(trace)).
+        append("--Calling throttle()----------> run collectTraceUnderThrottle()-----------------------------");
 
+        logger.info(sb.toString());
 
         throttle(agentId, postV09, "trace", responseObserver, new Runnable() {
             @Override
@@ -471,9 +476,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             }
         });
         //ADDED
-        logger.info("****StreamObserver<EmptyMessage> responseObserver: {}", responseObserver);
-        logger.info("*************Exiting throttledCollectTrace()************************************");
-        logger.info("********************************************************************************");
+        sb = new StringBuilder("*************Exiting throttledCollectTrace()************************************").
+           append("********************************************************************************");
+        logger.info(sb.toString());
     }
 
     private <T> void throttle(String agentId, boolean postV09, String collectionType,
@@ -670,21 +675,24 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             StreamObserver<EmptyMessage> responseObserver) {
 
         //ADDED
-        logger.info("********************************************************************************");
-        logger.info("*************Entering collectTraceUnderThrottle()*************************************");
-        logger.info("****agentId=<{}>, postV09=<{}>, trace -> {}", agentId, postV09, trace);
-
+        StringBuilder sb = new StringBuilder("********************************************************************************\n").
+        append("*************Entering collectTraceUnderThrottle()*************************************\n").
+        append("****agentId=" + agentId + ", postV09=" + postV09 + "**********\n").
+        append("Trace passed to this method: **********\n" + GrCentralObjToString.TraceToString(trace));
+        logger.info(sb.toString());
 
 
         String postV09AgentId;
         try {
             postV09AgentId = grpcCommon.getAgentId(agentId, postV09);
+            sb = new StringBuilder("****grpcCommon.getAgentId(agentId, postV09) returned -> " + postV09AgentId + "******\n");
         } catch (Throwable t) {
             logger.error("{} - {}", getAgentIdForLogging(agentId, postV09), t.getMessage(), t);
             responseObserver.onError(t);
             return;
         }
         try {
+            sb.append("Storing trace in dao after future proofing");
             traceDao.store(postV09AgentId, getFutureProofTrace(trace));
         } catch (Throwable t) {
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
@@ -693,13 +701,13 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
 
         //ADDED
-        logger.info("****StreamObserver<EmptyMessage> responseObserver BEFORE responseObserver.onNext(): {}", responseObserver);
-        logger.info("*************************************************");
+        sb.append("****Calling onNext, onComplete*********\n").
+        append("*************************************************\n");
         responseObserver.onNext(EmptyMessage.getDefaultInstance());
         responseObserver.onCompleted();
-        logger.info("****StreamObserver<EmptyMessage> responseObserver AFTER responseObserver.onCompleted(): {}", responseObserver);
-        logger.info("*************Exiting collectTraceUnderThrottle()************************************");
-        logger.info("********************************************************************************");
+        sb.append("*************Exiting collectTraceUnderThrottle()************************************\n").
+        append("********************************************************************************\n");
+        logger.info(sb.toString());
     }
 
     private long getFutureProofAggregateCaptureTime(long captureTime) {
@@ -728,14 +736,22 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     }
 
     private Trace getFutureProofTrace(Trace trace) {
+        StringBuilder sb = new StringBuilder("*********getFutureProofTrace()************\n");
         long currentTimeMillis = clock.currentTimeMillis();
+        sb.append("*******clock.currentTimeMillis()==" + currentTimeMillis + "\n");
+        sb.append("Checking if tooFarInTheFuture(trace.getHeader().getCaptureTime(), currentTimeMillis)\n");
+        sb.append("by this algo: captureTime - currentTimeMillis > HOURS.toMillis(1)\n");
         if (tooFarInTheFuture(trace.getHeader().getCaptureTime(), currentTimeMillis)) {
             // too far in the future just use current time
+            sb.append("tooFarInTheFuture()==true, setting trace capture time to clock.currentTimeMillis()\n");
+            logger.info(sb.toString());
             return trace.toBuilder()
                     .setHeader(trace.getHeader().toBuilder()
                             .setCaptureTime(currentTimeMillis))
                     .build();
         } else {
+            sb.append("tooFarInTheFuture()==false, returning trace unmodified\n");
+            logger.info(sb.toString());
             return trace;
         }
     }
@@ -968,52 +984,87 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
 
         private void onNextInternal(TraceStreamMessage value) {
+
+            String messageStr = value.getMessageCase().toString();
+            String val = "";
+
             switch (value.getMessageCase()) {
                 case STREAM_HEADER:
                     streamHeader = value.getStreamHeader();
+                    val = (streamHeader != null) ? streamHeader.toString() : null;
                     break;
-                case SHARED_QUERY_TEXT:
+                case SHARED_QUERY_TEXT:                    
                     sharedQueryTexts.add(value.getSharedQueryText());
+                    val = GrCentralObjToString.SharedQueryTextToString(value.getSharedQueryText());
                     break;
                 case TRACE:
                     // this is for 0.9.12 and prior agents
                     trace = value.getTrace();
+                    val = GrCentralObjToString.TraceToString(trace);
                     break;
                 case ENTRY:
                     entries.add(value.getEntry());
+                    val = GrCentralObjToString.EntryToString(value.getEntry());
                     break;
                 case QUERIES:
                     queries.addAll(value.getQueries().getQueryList());
+                    val = GrCentralObjToString.QueryListToString(value.getQueries().getQueryList());
                     break;
                 case MAIN_THREAD_PROFILE:
                     mainThreadProfile = value.getMainThreadProfile();
+                    val = GrCentralObjToString.ProfileToString(mainThreadProfile);
                     break;
                 case AUX_THREAD_PROFILE:
                     auxThreadProfile = value.getAuxThreadProfile();
+                    val = GrCentralObjToString.ProfileToString(auxThreadProfile);
                     break;
                 case HEADER:
                     header = value.getHeader();
+                    val = GrCentralObjToString.HeaderToString(header);
                     break;
                 case STREAM_COUNTS:
                     streamCounts = value.getStreamCounts();
+                    val = GrCentralObjToString.TraceStreamCountsToString(streamCounts);
                     break;
                 default:
                     throw new RuntimeException("Unexpected message: " + value.getMessageCase());
             }
+            StringBuilder toLog = new StringBuilder("+++++++++++++++CollectorServiceImpl.onNextInternal+++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++\n").
+            append("+++++++++++++++CollectorServiceImpl.onNextInternal+++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++\n").
+            append("+++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++\n").
+            append("++++++++Message Type: " + messageStr + "++++\n").
+            append("+++++++Messasge Contents:+++++++++++++\n" + val).
+            append("+++++++++++++++CollectorServiceImpl.onNextInternal+++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++\n").
+            append("+++++++++++++++CollectorServiceImpl.onNextInternal+++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++\n").
+            append("+++++++++++++++CollectorServiceImpl.onNextInternal+++++++++++++++CollectorServiceImpl.onNextInternal++++++++++++\n").
+            append("********************************************************************************\n").
+            append("****Exiting CollectorServiceImpl.onNextInternal*************************\n");
+            logger.info(toLog.toString());
         }
 
         private void onCompletedInternal() {
+
+
             checkNotNull(streamHeader);
+
+            StringBuilder sb = new StringBuilder("+++++++++++++++CollectorServiceImpl.onCompletedInternal+++++++++++++++CollectorServiceImpl.onCompletedInternal++++++++++++\n").
+            append("+++++++++++++++CollectorServiceImpl.onCompletedInternal+++++++++++++++CollectorServiceImpl.onCompletedInternal++++++++++++\n").
+            append("+++++++++++++++CollectorServiceImpl.onCompletedInternal++++++++++++++CollectorServiceImpl.onCompletedInternal++++++++++++\n").
+            append(GrCentralObjToString.TraceStreamHeaderToString(streamHeader));
+
             if (trace == null) {
+                sb.append("****Trace was null****\n");
                 // this is for 0.9.13 and later agents
                 checkNotNull(streamCounts);
                 if (!isEverythingReceived()) {
                     // no point in calling onError to force re-try since gRPC maxMessageSize limit
                     // will just be hit again
+                    sb.append("****Not everything received to form trace message, marking complete and aborting****\n");
                     responseObserver.onNext(EmptyMessage.getDefaultInstance());
                     responseObserver.onCompleted();
                     return;
                 }
+                sb.append("****Trace was null, reconstructing from Collector's contents****\n");
                 Trace.Builder builder = Trace.newBuilder()
                         .setId(streamHeader.getTraceId())
                         .setUpdate(streamHeader.getUpdate())
@@ -1029,38 +1080,54 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 }
                 trace = builder.build();
             } else {
+                sb.append("****Trace was NOT null, adding sharedQueryTExts and rebuilding it***\n");
                 trace = trace.toBuilder()
                         .addAllSharedQueryText(sharedQueryTexts)
                         .build();
             }
+            sb.append("*streamHeader.getAgentId()==" + streamHeader.getAgentId() + " , streamHeader.getPostV09()==" + streamHeader.getPostV09() + "\n");
+            sb.append("***Trace contents passed to throttleCollectTrace\n" + GrCentralObjToString.TraceToString(trace));
+            logger.info(sb.toString());
             throttledCollectTrace(streamHeader.getAgentId(), streamHeader.getPostV09(), trace,
                     responseObserver);
+            sb = new StringBuilder("********************************************************************************\n").
+            append("****Exiting CollectorServiceImpl.onCompletedInternal*************************\n");
+            logger.info(sb.toString());
         }
 
         @RequiresNonNull({"streamHeader", "streamCounts"})
         private boolean isEverythingReceived() {
+            StringBuilder sb = new StringBuilder("*********Entering isEverythingReceived()*************\n");
             // validate that all data was received, may not receive everything due to gRPC
             // maxMessageSize limit exceeded: "Compressed frame exceeds maximum frame size"
             if (header == null) {
-                logger.error("{} - did not receive header, likely due to gRPC maxMessageSize limit"
-                        + " exceeded", getAgentIdForLogging());
+                logger.error("{}\n {} - did not receive header, likely due to gRPC maxMessageSize limit"
+                        + " exceeded", sb.toString(), getAgentIdForLogging());
                 return false;
             }
             if (sharedQueryTexts.size() < streamCounts.getSharedQueryTextCount()) {
-                logger.error("{} - expected {} shared query texts, but only received {}, likely due"
+                logger.error("{}\n {} - expected {} shared query texts, but only received {}, likely due"
                         + " to gRPC maxMessageSize limit exceeded for some of them",
-                        getAgentIdForLogging(), streamCounts.getSharedQueryTextCount(),
+                        sb.toString(), getAgentIdForLogging(), streamCounts.getSharedQueryTextCount(),
                         sharedQueryTexts.size());
                 return false;
             }
             if (entries.size() < streamCounts.getEntryCount()) {
-                logger.error("{} - expected {} entries, but only received {}, likely due to gRPC"
-                        + " maxMessageSize limit exceeded for some of them", getAgentIdForLogging(),
+                logger.error("{}\n {} - expected {} entries, but only received {}, likely due to gRPC"
+                        + " maxMessageSize limit exceeded for some of them", sb.toString(), getAgentIdForLogging(),
                         streamCounts.getEntryCount(), entries.size());
                 return false;
             }
+            sb.append("Checking if -> checkState(sharedQueryTexts.size() == streamCounts.getSharedQueryTextCount()\n");
             checkState(sharedQueryTexts.size() == streamCounts.getSharedQueryTextCount());
-            checkState(entries.size() == streamCounts.getEntryCount());
+            sb.append("checkState(sharedQueryTexts.size() == streamCounts.getSharedQueryTextCount())  -- PASSED\n");
+            logger.info(sb.toString());
+            sb.append("Checking if -> checkState(entries.size() == streamCounts.getEntryCount())\n");
+            checkState(entries.size() == streamCounts.getEntryCount()); 
+            sb = new StringBuilder("checkState(entries.size() == streamCounts.getEntryCount()) -- PASSED\n");
+            sb.append("********************************************************************************\n").
+            append("****Exiting CollectorServiceImpl.isEverythingReceived()*************************\n");
+            logger.info(sb.toString());
             return true;
         }
 

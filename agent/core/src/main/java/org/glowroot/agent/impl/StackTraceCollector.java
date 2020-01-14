@@ -79,9 +79,16 @@ public class StackTraceCollector {
     }
 
     static void captureStackTraces(List<ThreadContextImpl> threadContexts) {
+
+        StringBuilder sb = new StringBuilder();
+            sb.append("\n********************************************************************************\n");
+            sb.append("*********************Enter StackTraceCollector captureStackTraces()***********************\n");
+
         if (threadContexts.isEmpty()) {
             // critical not to call ThreadMXBean.getThreadInfo() with empty id list
             // see https://bugs.openjdk.java.net/browse/JDK-8074368
+            sb.append("******************threadContexts.isEmpty() returning*******************\n");
+            logger.info(sb.toString());
             return;
         }
         long[] threadIds = new long[threadContexts.size()];
@@ -91,13 +98,23 @@ public class StackTraceCollector {
         @Nullable
         ThreadInfo[] threadInfos =
                 ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
+        sb.append("***************Cycling through list of threadcontexts*******************\n");
         for (int i = 0; i < threadContexts.size(); i++) {
             ThreadContextImpl threadContext = threadContexts.get(i);
+            
             ThreadInfo threadInfo = threadInfos[i];
             if (threadInfo != null) {
+                sb.append("***************Capture stack for threadcontext below*******************\n");
+                sb.append(AgentImplsToString.ThreadContextImplToString(threadContext));
+                sb.append("****************Use this threadInfo*************************\n");
                 threadContext.captureStackTrace(threadInfo);
+            }else{
+                sb.append("***************theadInfo == null for threadContext below, not capturing stack trace*******************\n");
+                sb.append(AgentImplsToString.ThreadContextImplToString(threadContext));
             }
         }
+        sb.append("***************Done Cycling through list of threadcontexts*******************\n");
+        logger.info(sb.toString());
     }
 
     private class InternalRunnable implements Runnable {
@@ -144,21 +161,57 @@ public class StackTraceCollector {
         }
 
         private void runInternal() {
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("\n********************************************************************************\n");
+            sb.append("*********************Enter StackTraceCollector runInternal()***********************\n");
+
             List<Transaction> transactions =
-                    ImmutableList.copyOf(transactionRegistry.getTransactions());
+                    ImmutableList.copyOf(transactionRegistry.getTransactions());            
+
             if (transactions.isEmpty()) {
+                sb.append("******************Transaction list from transaction registry empty, returning************************************\n");
+                logger.info(sb.toString());
                 return;
             }
+
+            ///ADDED
+            sb.append("*********************List obtianed from transaction registry***********************\n");
+            sb.append(AgentImplsToString.TransactionListToString(transactions));
+
             List<ThreadContextImpl> activeThreadContexts =
                     Lists.newArrayListWithCapacity(2 * transactions.size());
+
+            sb.append("********************************************************************************\n");
+            sb.append("********************************************************************************\n");
+            sb.append("*********************Processing transaction list***********************\n");
             for (int i = 0; i < transactions.size(); i++) {
                 Transaction transaction = transactions.get(i);
+                //ADDED
+                sb.append(AgentImplsToString.TransactionToString(transaction));
                 ThreadContextImpl mainThreadContext = transaction.getMainThreadContext();
+                sb.append("************Main thread context\n");
+                sb.append(AgentImplsToString.ThreadContextImplToString(mainThreadContext));
+
                 if (mainThreadContext.isActive()) {
+                    //ADDED
+                    sb.append("**(mainThreadContext.isActive() so adding mainThreadContext to activeThreadContexts\n");
+                    sb.append(AgentImplsToString.ThreadContextImplToString(mainThreadContext));
+                    sb.append("********************************************************************************\n");
                     activeThreadContexts.add(mainThreadContext);
+                }else{
+                    //ADDED
+                    sb.append("**(mainThreadContext.is NOT Active so NOT adding mainThreadContext to activeThreadContexts\n");
+                    sb.append("********************************************************************************\n");
                 }
+                sb.append("**Adding all trnsaciton's ActiveAuxThreadContexts to activeThreadContextList\n");
                 activeThreadContexts.addAll(transaction.getActiveAuxThreadContexts());
             }
+            sb.append("*********************Done Processing transaction list***********************\n");
+            sb.append("********************************************************************************\n");
+            sb.append("********************************************************************************\n");
+            sb.append("*********************Capturing stack Traces now***********************\n");
+            logger.info(sb.toString());
             captureStackTraces(activeThreadContexts);
         }
     }

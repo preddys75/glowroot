@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -590,32 +591,59 @@ public class CentralCollector implements Collector {
         private final List<String> fullTextSha1s = Lists.newArrayList();
 
         private CollectTraceGrpcCall(TraceReader traceReader) {
+
+            StringBuilder sb = new StringBuilder("********************Entering CollectTraceGrpcCall.CollectTraceGrpcCall()*********************\n").
+                                           append("********************************************************************\n").
+                                           append(MessageFormat.format("TraceId: {0}\n", 
+                                                new Object[]{GrCentralObjToString.TraceReaderToString(traceReader)})).
+                                            append("********************Exiting CollectTraceGrpcCall.CollectTraceGrpcCall()*********************\n").
+                                                append("********************************************************************\n");
+
+            
+
             this.traceReader = traceReader;
+
+            logger.info(sb.toString());
         }
 
         @Override
         public void call(StreamObserver<EmptyMessage> responseObserver) {
 
-            //ADDED
-            logger.info("******************************************************************************");
-            logger.info("CollectTraceGrpcCall.Scall(): observer, {}", responseObserver);
+            StringBuilder sb = new StringBuilder("********************Entering CollectTraceGrpcCall.call()*********************\n").
+                                           append("********************************************************************\n");
+            // logger.info("******************************************************************************");
+            // logger.info("CollectTraceGrpcCall.Scall(): observer, {}", responseObserver);
 
             StreamObserver<TraceStreamMessage> requestObserver =
                     collectorServiceStub.collectTraceStream(responseObserver);
+            
+            sb.append("**Calling requestObserver.onNext() with the following\n").
+               append(MessageFormat.format("AgentId: {0}\n", 
+                    new Object[]{agentId})).
+                append(MessageFormat.format("traceReader.traceId(): {0}\n", 
+                    new Object[]{traceReader.traceId()})).
+                append(MessageFormat.format("traceReader.update(): {0}\n", 
+                        new Object[]{traceReader.update()})).
+                append(MessageFormat.format("setPostV09={0}\n", 
+                        new Object[]{true}));
+            
+            logger.info(sb.toString());
 
-            requestObserver.onNext(TraceStreamMessage.newBuilder()
+            TraceStreamMessage tsm = TraceStreamMessage.newBuilder()
                     .setStreamHeader(TraceStreamHeader.newBuilder()
                             .setAgentId(agentId)
                             .setTraceId(traceReader.traceId())
                             .setUpdate(traceReader.update())
                             .setPostV09(true))
-                    .build());
-
-            //ADDED
-            logger.info("******************************************************************************");
-            logger.info("agentId: {}, traceReader.traceId(): {}, traceReader.update(): {}",
-                    agentId, traceReader.traceId(), traceReader.update());
-
+                            .build();
+            
+            requestObserver.onNext(tsm);
+            
+            sb = new StringBuilder("**New TSM value In CollectTraceGrpcCall.call right after requestObserver.onNext(TSM)***********\n").
+                            append("********************************************************************\n").
+                            append(GrCentralObjToString.TraceStreamMessageToString(tsm)).
+                            append("\n********************************************************************\n");
+           
             // need to clear in case this is a retry
             fullTextSha1s.clear();
             TraceVisitorImpl traceVisitor = new TraceVisitorImpl(requestObserver, fullTextSha1s);
@@ -632,6 +660,11 @@ public class CentralCollector implements Collector {
                             .setSharedQueryTextCount(traceVisitor.sharedQueryTextCount))
                     .build());
             requestObserver.onCompleted();
+
+            sb.append("********************Exiting CollectTraceGrpcCall.call()*********************").
+               append("********************************************************************");
+
+            logger.info(sb.toString());
         }
 
         @Override

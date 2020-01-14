@@ -4,5 +4,6 @@ target/
 **/*.project
 **/*.classpath
 **/.factorypath
+*.log
 build.out
 .idea

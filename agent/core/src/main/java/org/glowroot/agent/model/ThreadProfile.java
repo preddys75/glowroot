@@ -16,6 +16,7 @@
 package org.glowroot.agent.model;
 
 import java.lang.management.ThreadInfo;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,6 +27,8 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.common.model.MutableProfile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ThreadProfile {
 
@@ -39,6 +42,9 @@ public class ThreadProfile {
     private @MonotonicNonNull MutableProfile profile;
     @GuardedBy("lock")
     private long sampleCount;
+
+    private static final Logger logger = LoggerFactory.getLogger(ThreadProfile.class);
+
 
     @VisibleForTesting
     public ThreadProfile(int maxSamples) {
@@ -103,6 +109,7 @@ public class ThreadProfile {
             } else {
                 profile.merge(stackTrace, threadState);
             }
+            logger.info("***********After addStackTrace() - ThreadProfile.ToString()\n" + ToString() + "\n");
         }
     }
 
@@ -114,4 +121,91 @@ public class ThreadProfile {
             profile.merge(stackTrace, threadState);
         }
     }
+
+    
+    //ADDED
+    public String ToString(){
+
+        StringBuffer sb = new StringBuffer(). 
+        append("**************************************************\n").      
+        append("********Begin logging ThreadProfile********\n");
+
+        synchronized (lock) {
+        
+        sb.append(MessageFormat.format("Max Samples: {0}\n", new Object[]{maxSamples})).
+           append(MessageFormat.format("Is sample limit exceeded: {0}\n", new Object[]{isSampleLimitExceeded()})).
+
+        append(MessageFormat.format("Sample count: {0}\n", new Object[]{getSampleCount()})).
+        append("********Begin Logging Unmerged Stack Traces********\n");
+        int count = 1;
+    
+        for (List<StackTraceElement> unMergedList : unmergedStackTraces) {
+
+            sb.append(MessageFormat.format("Unmerged List: {0}\n, {1}\n",
+                    new Object[] { count, JAVAStackTraceElementListToString(unMergedList) }));
+
+            count++;
+        }
+
+        sb = sb.append("********Done Logging Unmerged Stack Traces********\n").
+
+                append("********Begin Logging Unmerged StackTrace ThreadSTATES********\n");
+        count = 1;
+        for (Thread.State ts : unmergedStackTraceThreadStates) {
+            sb = sb.append(MessageFormat.format("Thread State: {0}\n, {1}\n", new Object[] { count, ts }));
+            count++;
+        }
+        sb = sb.append("********End Logging Unmerged StackTrace ThreadSTATES********\n");
+        sb.append("********Mutable Profile********\n");
+        if (profile != null) {
+            sb = sb.append(MessageFormat.format("Mutable profile: {0}\n", new Object[] { profile.ToString() }));
+        }
+        
+        
+        sb = sb.append(MessageFormat.format("Max Samples: {0}\n", new Object[]{maxSamples})).            
+                append("********End logging ThreadProfile********\n").
+                append("**************************************************\n");
+    }
+
+        return sb.toString();
+    }
+
+    //ADDED
+    private String JAVAStackTraceElementListToString(List<java.lang.StackTraceElement> steList){
+
+        String retVal = "Unmerged List == null\n";
+        
+        if(steList != null && !steList.isEmpty()){
+  
+           StringBuilder strVal = new StringBuilder().
+           append("********Begin logging Unmerged List********\n");
+           
+           for(StackTraceElement ste : steList){       
+              strVal.append(StackTraceElementToString(ste));      
+           }
+           retVal = strVal.append("********Done logging Unmerged List********\n").toString();
+       }
+  
+       return retVal;
+           
+     }
+
+     private String StackTraceElementToString(StackTraceElement ste){
+
+        String retVal = "StackTraceElement == null";
+  
+        if(ste != null){
+            retVal = new StringBuilder().
+                    append("***************************************************\n").
+                    append("********Begin logging StackTraceElement************\n").
+                    append(MessageFormat.format("****StackTraceElement.getClassName(): {0}***\n", ste.getClassName())).
+                    append(MessageFormat.format("****StackTraceElement.getFileName(): {0}***\n", ste.getFileName())).
+                    append(MessageFormat.format("****StackTraceElement.getLineNumber(): {0}***\n", ste.getLineNumber())).
+                    append(MessageFormat.format("****StackTraceElement.getMethodName(): {0}***\n", ste.getMethodName())).
+                    append("********Done logging StackTraceElement********\n").
+                    append("***************************************************\n").toString();
+        }
+        return retVal;
+  
+     }
 }

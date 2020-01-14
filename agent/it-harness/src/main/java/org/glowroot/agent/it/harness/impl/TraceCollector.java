@@ -50,6 +50,7 @@ class TraceCollector {
         logger.info("****Entering getCompletedTrace()****transactionType: {}, transactionName: {}, timeout: {}, unit: {}**********",
         transactionType, transactionName, timeout, unit);
 
+        int i = 0;
         if (transactionName != null) {
             checkNotNull(transactionType);
         }
@@ -61,12 +62,14 @@ class TraceCollector {
                                 || trace.getHeader().getTransactionType().equals(transactionType))
                         && (transactionName == null || trace.getHeader().getTransactionName()
                                 .equals(transactionName))) {
-                    /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Exiting getCompletedTrace()****returning trace: {}", trace); 
-                    return trace;
+
+                            /*ADDED*/
+                            logger.info("********************************************************************************");
+                            logger.info("****Exiting getCompletedTrace()****returning trace: {}", trace); 
+                            return trace;
                 }
             }
+            //System.out.println("Print: " + ++i);
             MILLISECONDS.sleep(10);
         }
         /*ADDED*/
@@ -149,26 +152,34 @@ class TraceCollector {
     }
 
     public void collectTrace(Trace trace) {
-        /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("****Entering collectTrace(): trace -> {}****", trace);
+        StringBuilder sb = new StringBuilder("********************************************************************************\n");
+        sb.append("****Entering collectTrace()********trace id==" + trace.getId() + "******************************\n");
+        sb.append("****Cycling through " + traces.size() + "traces to insert new one\n");
         for (int i = 0; i < traces.size(); i++) {
             Trace loopTrace = traces.get(i);
+            
             if (loopTrace.getId().equals(trace.getId())) {
+                sb.append("****loopTrace.getId().equals(trace.getId()==" + trace.getId() + "\n");
                 if (trace.getHeader().getDurationNanos() >= loopTrace.getHeader()
                         .getDurationNanos()) {
-                    /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****collectTrace(): trace set****");
+                    sb.append("trace.getHeader().getDurationNanos() == " + trace.getHeader().getDurationNanos() +  
+                    ">= loopTrace.getHeader().getDurationNanos() == " + loopTrace.getHeader().getDurationNanos() + "\n").
+                    append("updating trace entry at index(" + i + ") to trace passed to this method\n");
+                    logger.info(sb.toString());
                     traces.set(i, trace);
                 }
+                sb.append("****Exitinging collectTrace()********trace id==" + trace.getId() + "******************************\n");
+                logger.info(sb.toString());
+
                 return;
             }
         }
+        sb.append("****Exitinging collectTrace()********ADDING NEW trace id==" + trace.getId() + " to traces list******************************\n");
         traces.add(trace);
          /*ADDED*/
-         logger.info("********************************************************************************");
-         logger.info("****Exiting collectTrace()****"); 
+         sb.append("********************************************************************************\n");
+         logger.info(sb.toString());
+
     }
 
     public void log(LogEvent logEvent) {

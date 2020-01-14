@@ -11,6 +11,8 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.GeneratedMessageV3;
 import org.glowroot.agent.model.QueryEntryBase;
+import org.glowroot.common.util.GrProtoObjToString;
+
 
 
 public class GrModelObjToString {
@@ -51,5 +53,27 @@ public class GrModelObjToString {
       return retVal;
 
    }  
+
+   public static String ErrorMessageToString(ErrorMessage errorMesg){
+
+      String retVal = "ErrorMessage == null";
+
+      if(errorMesg != null){
+            retVal = new StringBuilder().
+            append("***************************************************\n").
+            append("********Begin logging ErrorMessage************\n").
+            append(MessageFormat.format("****ErrorMessage.getMessage(): {0}***\n", errorMesg.message())).
+            append(MessageFormat.format("****ErrorMessage.throwable: {0}***\n", GrProtoObjToString.ThrowableToString(errorMesg.throwable()))).
+            append("********Done logging ErrorMessage********\n").
+            append("***************************************************\n").toString();
+      }
+    
+      return retVal;
+
+   }
+
+  
+
+
 
 }

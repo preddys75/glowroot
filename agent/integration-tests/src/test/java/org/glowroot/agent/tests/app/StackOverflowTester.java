@@ -24,7 +24,7 @@ public class StackOverflowTester {
     }
 
     private void recurse1() throws Exception {
-        if (depth > 5000) {
+        if (depth > 30) {
             throw new StackOverflowError();
         }
         depth++;

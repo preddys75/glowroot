@@ -38,7 +38,7 @@ import io.netty.channel.EventLoopGroup;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.glowroot.agent.central.GrCentralObjToString;
 import org.glowroot.common.Constants;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -217,7 +217,7 @@ class GrpcServerWrapper {
 
             /*ADDED*/
             logger.info("********************************************************************************");
-            logger.info("****Entering CollectorServiceImpl.collectTraceStream(), returning StreamObserver<TraceStreamMessage>()*****");
+            logger.info("****Entering ++GrpcServerWrapper.collectTraceStream(), returning StreamObserver<TraceStreamMessage>()*****");
 
             return new StreamObserver<TraceStreamMessage>() {
 
@@ -232,9 +232,22 @@ class GrpcServerWrapper {
                 @Override
                 public void onNext(TraceStreamMessage value) {
 
+                    StringBuilder toLog = new StringBuilder("+++++++++++++++GrpcServerWrapper.collectTraceStream+++++++++++++++GrpcServerWrapper.collectTraceStream++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.collectTraceStream+++++++++++++++GrpcServerWrapper.collectTraceStream++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.collectTraceStream+++++++++++++++GrpcServerWrapper.collectTraceStream++++++++++++\n").
+                                                     append(GrCentralObjToString.TraceStreamMessageToString(value)).
+                                                     append("+++++++++++++++GrpcServerWrapper.collectTraceStream+++++++++++++++GrpcServerWrapper.collectTraceStream++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.collectTraceStream+++++++++++++++GrpcServerWrapper.collectTraceStream++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.collectTraceStream+++++++++++++++GrpcServerWrapper.collectTraceStream++++++++++++\n");
+
+                   
+                                                     
+
                     /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Entering CollectorServiceImpl.onNext()***** Value -> {}", value);
+                    logger.info("********************************************************************************\n");
+                    logger.info("****Entering GrpcServerWrapper.onNext()***** TraceStreamMessage -> {}\n", value);
+
+                    logger.info(toLog.toString());
 
                     try {
                         onNextInternal(value);
@@ -247,16 +260,16 @@ class GrpcServerWrapper {
                     }
 
                     /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Exiting CollectorServiceImpl.onNext()*****");
+                    logger.info("********************************************************************************\n");
+                    logger.info("****Exiting GrpcServerWrapper.onNext()*****\n");
                 }
 
                 @Override
                 public void onCompleted() {
 
                     /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Entering CollectorServiceImpl.onCompleted()*****");
+                    logger.info("********************************************************************************\n");
+                    logger.info("****Entering GrpcServerWrapper.onCompleted()*****\n");
 
                     try {
                         onCompletedInternal(responseObserver);
@@ -270,7 +283,7 @@ class GrpcServerWrapper {
 
                     /*ADDED*/
                     logger.info("********************************************************************************");
-                    logger.info("****Exiting CollectorServiceImpl.onCompleted()*****");
+                    logger.info("****Exiting GrpcServerWrapper.onCompleted()*****");
                 }
 
                 @Override
@@ -278,56 +291,75 @@ class GrpcServerWrapper {
                     logger.error(t.getMessage(), t);
                 }
 
-                private void onNextInternal(TraceStreamMessage value) {
+                private void onNextInternal(TraceStreamMessage value) {                    
+
 
                      /*ADDED*/
-                     logger.info("********************************************************************************");
-                     logger.info("****Entering CollectorServiceImpl.onNextInternal()*****: TraceStreamMessage -> {}", value);
+                     logger.info("********************************************************************************\n");
+                     logger.info("****Entering GrpcServerWrapper.onNextInternal()*****: TraceStreamMessage -> {}\n", value);
  
+                    String messageStr = value.getMessageCase().toString();
+                    String val = "";
 
                     switch (value.getMessageCase()) {
                         case STREAM_HEADER:
                             traceId = value.getStreamHeader().getTraceId();
+                            val = traceId;
                             break;
                         case SHARED_QUERY_TEXT:
                             sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                                     .setFullText(resolveFullText(value.getSharedQueryText()))
                                     .build());
+                            val = GrCentralObjToString.SharedQueryTextToString(value.getSharedQueryText());
                             break;
                         case ENTRY:
                             entries.add(value.getEntry());
+                            val = GrCentralObjToString.EntryToString(value.getEntry());
                             break;
                         case QUERIES:
                             queries.addAll(value.getQueries().getQueryList());
+                            val = GrCentralObjToString.QueryListToString(value.getQueries().getQueryList());
                             break;
                         case MAIN_THREAD_PROFILE:
                             mainThreadProfile = value.getMainThreadProfile();
+                            val = GrCentralObjToString.ProfileToString(mainThreadProfile);
                             break;
                         case AUX_THREAD_PROFILE:
                             auxThreadProfile = value.getAuxThreadProfile();
+                            val = GrCentralObjToString.ProfileToString(auxThreadProfile);
                             break;
                         case HEADER:
                             header = value.getHeader();
+                            val = GrCentralObjToString.HeaderToString(header);
                             break;
                         case STREAM_COUNTS:
+                            val = "No value, ITS STREAM_COUNTS^^^" + GrCentralObjToString.TraceStreamCountsToString(value.getStreamCounts());                           
                             break;
                         default:
                             throw new RuntimeException(
                                     "Unexpected message: " + value.getMessageCase());
                     }
 
-                     /*ADDED*/
-                     logger.info("********************************************************************************");
-                     logger.info("****Exiting CollectorServiceImpl.onNextInternal()*************************");
+                    StringBuilder toLog = new StringBuilder("+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++++++GrpcServerWrapper.onNextInternal++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++++++GrpcServerWrapper.onNextInternal++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++++++GrpcServerWrapper.onNextInternal++++++++++++\n").
+                                                     append("++++++++Message Type: " + messageStr + "++++\n").
+                                                     append("+++++++Messasge Contents:+++++++++++++\n" + val).
+                                                     append("+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++++++GrpcServerWrapper.onNextInternal++++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++\n").
+                                                     append("+++++++++++++++GrpcServerWrapper.onNextInternal+++++++++++++++GrpcServerWrapper.onNextInternal++++++++++++\n").
+                                                     append("********************************************************************************\n").
+                                                     append("****Exiting GrpcServerWrapper.onNextInternal()*************************\n");
+                    logger.info(toLog.toString());
                 }
 
                 private void onCompletedInternal(
                         final StreamObserver<EmptyMessage> responseObserver) {
 
-                    /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Entering CollectorServiceImpl.onCompletedInternal(): {}*******", responseObserver);
-                    
+                    StringBuilder retVal = new StringBuilder("********************************************************************************\n").
+                                                            append("********************GrpcServerWrapper.onCompletedInternal()***************\n");
+
+                                       
                     Trace.Builder trace = Trace.newBuilder()
                             .setId(checkNotNull(traceId))
                             .setHeader(checkNotNull(header))
@@ -335,9 +367,7 @@ class GrpcServerWrapper {
                             .addAllEntry(entries)
                             .addAllQuery(queries);
 
-                    /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Printing CollectorServiceImpl.onCompletedInternal() trace obj: {}", trace);
+                   
                     
                     if (mainThreadProfile != null) {
                         trace.setMainThreadProfile(mainThreadProfile);
@@ -346,7 +376,15 @@ class GrpcServerWrapper {
                         trace.setAuxThreadProfile(auxThreadProfile);
                     }
                     try {
-                        collector.collectTrace(trace.build());
+
+                      /*ADDED*/
+                      Trace tempTrace = trace.build();
+                      retVal.append("********************************************************************************\n").
+                           append("***GrpcServerWrapper.onCompletedInternal trace obj passed to collector.collectTrace(trace.build()\n" 
+                           + GrCentralObjToString.TraceToString(tempTrace));
+
+
+                        collector.collectTrace(tempTrace);
                     } catch (Throwable t) {
                         logger.error(t.getMessage(), t);
                         responseObserver.onError(t);
@@ -356,8 +394,11 @@ class GrpcServerWrapper {
                     responseObserver.onCompleted();
 
                     /*ADDED*/
-                    logger.info("********************************************************************************");
-                    logger.info("****Exiting CollectorServiceImpl.onCompletedInternal()");
+                    retVal.append("********************************************************************************\n").
+                           append("Just called: responseObserver.onNext(EmptyMessage.getDefaultInstance()) & responseObserver.onCompleted()\n").         
+                           append("****Exiting CollectorServiceImpl.onCompletedInternal()\n");
+
+                    logger.info(retVal.toString());
                 }
             };
         }

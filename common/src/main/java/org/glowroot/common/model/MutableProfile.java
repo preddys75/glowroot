@@ -16,12 +16,14 @@
 package org.glowroot.common.model;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -363,6 +365,24 @@ public class MutableProfile {
             return text;
         }
 
+        public String ToString() {
+
+            String retVal = new String();
+      
+                String packageName = packageNames.get(packageNameIndex);
+                String className = classNames.get(classNameIndex);
+                String fullClassName;
+                if (packageName.isEmpty()) {
+                    fullClassName = className;
+                } else {
+                    fullClassName = packageName + '.' + className;
+                }
+                retVal = new StackTraceElement(fullClassName, methodNames.get(methodNameIndex),
+                        fileNames.get(fileNameIndex), lineNumber).toString();
+         
+            return retVal;
+        }
+
         private String getTextUpper() {
             if (textUpper == null) {
                 textUpper = getText().toUpperCase(Locale.ENGLISH);
@@ -645,5 +665,53 @@ public class MutableProfile {
             }
             jg.writeEndObject();
         }
+    }
+
+    public String ToString(){
+
+        StringBuilder retVal = new StringBuilder();        
+
+
+        retVal.append("********Begin Mutable Profile To String********\n");
+        
+        ToStringHelp1(retVal, "packageNameIndex", "packageName", 
+                      packageNameIndexes, packageNames);
+        ToStringHelp1(retVal, "classNameIndex", "className", 
+                      classNameIndexes, classNames);
+        ToStringHelp1(retVal, "methodNameIndex", "methodNames", 
+                      methodNameIndexes, methodNames);
+        ToStringHelp1(retVal, "fileNameIndex", "fileNames", 
+                     fileNameIndexes, fileNames);
+        retVal.append("********Root Node List********\n");
+        for(ProfileNode pNode : rootNodes){
+            
+            retVal.append(MessageFormat.format("ProfileNode: {0}\n", 
+                  new Object[]{pNode.ToString()}));      
+
+        }
+        retVal.append("********End Mutable Profile To String********\n");        
+    
+        return retVal.toString();
+
+    }
+
+    private void ToStringHelp1(StringBuilder retVal, String indexName, String listName, 
+    Map<String, Integer> index, List<String> list){
+
+        retVal.append("********" + indexName + "********\n");
+        for(Entry<String, Integer> entry : index.entrySet()){
+           
+            retVal.append(MessageFormat.format("Name: {0}, Index: {1}\n", 
+                new Object[]{entry.getKey(), entry.getValue()}));           
+
+        }
+        retVal.append("********" + listName + " list********\n");
+        for(String item : list){
+           
+            retVal.append(MessageFormat.format("{0} entry: {1}\n", 
+                new Object[]{listName, item}));           
+
+        }
+
     }
 }

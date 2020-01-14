@@ -17,6 +17,7 @@ package org.glowroot.agent.impl;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
@@ -358,6 +359,7 @@ public class Transaction {
         }
     }
 
+    //MERGED
     void mergeAuxThreadTimersInto(AggregatedTimer rootAuxThreadTimer) {
         synchronized (mainThreadContext) {
             if (auxThreadContexts == null) {
@@ -793,13 +795,25 @@ public class Transaction {
     }
 
     void captureStackTrace(boolean auxiliary, ThreadInfo threadInfo) {
+        
+        //ADDED
+       StringBuilder retVal = new StringBuilder();
+
+       retVal.append("********Begin Transaction captureStackTrace()********\n").
+              append(MessageFormat.format("****auxiliary: {0}, ThreadInfo: {1}***\n", 
+                 new Object[]{auxiliary, (threadInfo != null)? threadInfo.toString() : null}));
+
         if (completed) {
+            retVal.append("********completed = true, returning********\n");
+            logger.info(retVal.toString());
             return;
         }
         ThreadProfile profile;
         if (auxiliary) {
+            retVal.append("********auxilary set, setting profile to aux********\n");
             profile = auxThreadProfile;
         } else {
+            retVal.append("********auxilary NOT set, setting profile to main********\n");
             profile = mainThreadProfile;
         }
         if (profile == null) {
@@ -811,15 +825,24 @@ public class Transaction {
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
             profile = new ThreadProfile(maxProfileSamples);
+            
+            retVal.append(MessageFormat.format("****Adding trace with ThreadInfo: {0}***\n", 
+                  new Object[]{(threadInfo != null)? threadInfo.toString() : null}));
+            
             profile.addStackTrace(threadInfo);
+            
+            logger.info(retVal.toString());
             if (auxiliary) {
                 auxThreadProfile = profile;
             } else {
                 mainThreadProfile = profile;
             }
             return;
+        }else{
+            retVal.append("*****Current profile already set, adding stack trace now********\n");
         }
         profile.addStackTrace(threadInfo);
+        logger.info(retVal.toString());
     }
 
     void trackResourceAcquired(Object resource, boolean withLocationStackTrace) {

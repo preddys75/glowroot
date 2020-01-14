@@ -32,7 +32,7 @@ public class CoreProtoToString {
       if(gmV3 == null){
          return "GeneratedMessageV3 == null";
       }
-
+      
       Descriptor descriptor = gmV3.getDescriptorForType();
       String unQualifiedFieldName = descriptor.getName();
       FieldDescriptor fd = descriptor.findFieldByName(unQualifiedFieldName);

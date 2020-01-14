@@ -132,8 +132,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             AtomicBoolean inConnectionFailure, SharedQueryTextLimiter sharedQueryTextLimiter) {
 
          /*ADDED*/
-        logger.info("********************************************************************************");
-        logger.info("***************Entering DownstreamServiceObserver()**************************************");
+        logger.info("********************************************************************************\n");
+        logger.info("***************Entering DownstreamServiceObserver()**************************************\n");
         logger.info("*******Agent  Id: {}", agentId);
         
         this.centralConnection = centralConnection;
@@ -198,7 +198,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
         /*ADDED*/
         logger.info(new StringBuilder("*****************************************************************************\n").
-                                      append("***************Exiting onNext()**************************************").toString());
+                                      append("***************Exiting onNext()**************************************\n").toString());
         
     }
 

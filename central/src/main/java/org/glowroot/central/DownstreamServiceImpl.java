@@ -155,7 +155,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
     boolean updateAgentConfigIfConnected(String agentId, AgentConfig agentConfig) throws Exception {
         // no need to retry on shutting-down response
         //ADDED - edited
-        logger.info("******************updateAgentConfigIfConnected(): agentId: {},\n agentConfig: {}***********", agentId, agentConfig);
+        logger.info("******************updateAgentConfigIfConnected(): agentId: {},\n agentConfig: {}***********\n", agentId, agentConfig);
 
         boolean retVal =  connectedAgents.execute(agentId, 60, new SendDownstreamFunction(
                 CentralRequest.newBuilder()
@@ -166,9 +166,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 .isPresent();
 
         //ADDED
-        logger.info(new StringBuilder("***************updateAgentConfigIfConnected()********************************").
-                              append("SendDownstreamFunction() returned: " + retVal).
-                              append((retVal) ? "****Updated config with: " + agentConfig : "Did not update config").toString());
+        logger.info(new StringBuilder("***************updateAgentConfigIfConnected()********************************\n").
+                              append("SendDownstreamFunction() returned: " + retVal + "\n").
+                              append((retVal) ? "****Updated config with: " + agentConfig + "\n" : "Did not update config\n").toString());
         
         return retVal;
     }

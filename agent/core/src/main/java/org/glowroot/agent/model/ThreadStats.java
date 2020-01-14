@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.model;
 
+import java.text.MessageFormat;
+
 import org.glowroot.common.util.NotAvailableAware;
 
 // not using Immutables for micro-optimization purposes, since instantiated for each transaction
@@ -50,5 +52,23 @@ public class ThreadStats {
 
     public long getAllocatedBytes() {
         return allocatedBytes;
+    }
+
+    public String ToString(){
+
+         //ADDED
+         String retVal = new StringBuilder().
+               append("***************************************************\n").
+               append("********Begin logging ThreadStats************\n").
+               append(MessageFormat.format("****ThreadStats.getCpuNanos(): {0}***\n", getCpuNanos())).
+               append(MessageFormat.format("****ThreadStats.getBlockedMillis(): {0}***\n", getBlockedMillis())).
+               append(MessageFormat.format("****ThreadStats.getAllocatedBytes(): {0}***\n", getAllocatedBytes())).
+               append(MessageFormat.format("****ThreadStats.getWaitedMillis(): {0}***\n", getWaitedMillis())).
+               append("********Done logging ThreadStats********\n").
+               append("***************************************************\n").toString();
+                
+         return retVal;
+
+
     }
 }

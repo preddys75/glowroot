@@ -465,7 +465,6 @@ class TraceEntryImpl extends QueryEntryBase implements AsyncQueryEntry, Timer {
                      new Object[]{errorMessage.throwable()})).toString();
 
         logger.info(logVal);
-        logger.info("***TraceReader traceReader entering collectTrace -> {}", traceReader);
 
         endInternal(ticker.read(), errorMessage);
     }

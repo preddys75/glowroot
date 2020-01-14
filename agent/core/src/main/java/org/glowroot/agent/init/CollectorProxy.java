@@ -19,12 +19,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import com.google.common.annotations.VisibleForTesting;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.glowroot.agent.central.GrCentralObjToString;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
@@ -78,12 +80,18 @@ public class CollectorProxy implements Collector {
 
     @Override
     public void collectTrace(TraceReader traceReader) throws Exception {
+        StringBuilder sb = new StringBuilder("****************************************************************\n").
+                               append("****************************************************************\n").
+                               append("Entering CollectorProxy.collectTrace(TraceReader traceReader)\n");
         if (instance == null) {
             if (latch.await(2, MINUTES)) {
+                sb.append(MessageFormat.format("**********From CollectorProxy.collectTrace Calling collectTrace() AFTER waitingn on latch: traceReader ->\n {0}\n", 
+                                  new Object[]{GrCentralObjToString.TraceReaderToString(traceReader)}));
                 checkNotNull(instance).collectTrace(traceReader);
             }
         } else {
-            logger.info("**********Calling collectTrace(): traceReader -> {}*********", traceReader);
+            sb.append(MessageFormat.format("**********From CollectorProxy.collectTrace Calling collectTrace(): traceReader ->\n {0}\n", 
+                                  new Object[]{GrCentralObjToString.TraceReaderToString(traceReader)}));
             instance.collectTrace(traceReader);
         }
     }

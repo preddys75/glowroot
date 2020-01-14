@@ -1,5 +1,7 @@
 package org.glowroot.common.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.text.MessageFormat;
 import java.util.List;
 
@@ -21,7 +23,7 @@ public class GrObjToString {
 
         String retVal = "StackTraceElement == null";
 
-        if(ste != null){
+        if(ste != null && !ste.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.StackTraceElement.getDefaultInstance())){
 
             String callingMethod = ste.getMethodName();
             String callingClass = ste.getClassName();
@@ -37,8 +39,8 @@ public class GrObjToString {
     }
 
     public static String CentralRequestToString(CentralRequest request){
-
-        return (request == null) ? null :
+      
+        return (request == null || request.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest.getDefaultInstance())) ? null :
          new StringBuilder().
                      append(MessageFormat.format("request.getMessageCase(): {0}\n", new Object[]{request.getMessageCase()})).
                      append(MessageFormat.format("CentralRequest.getDescriptor(): {0}\n", new Object[]{CentralRequest.getDescriptor()})).
@@ -159,7 +161,7 @@ public class GrObjToString {
 
       String retVal = "StackTraceElement == null";
 
-      if(ste != null){
+      if(ste != null && !ste.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.StackTraceElement.getDefaultInstance())){
                   retVal = new StringBuilder().
                          append("********Begin logging StackTraceElement********\n").
                          append(MessageFormat.format("****StackTraceElement.getClassName(): {0}***\n", ste.getClassName())).
@@ -179,7 +181,7 @@ public class GrObjToString {
 
       String retVal = "StackTraceElement List == null";
       
-      if(steList != null){
+      if(steList != null && !steList.isEmpty()){
 
          StringBuilder strVal = new StringBuilder().
          append("********Begin logging StackTraceElement List********\n");
@@ -201,7 +203,7 @@ public class GrObjToString {
 
       String retVal = "LockInfo == null";
 
-      if(li != null){
+      if(li != null && !li.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.LockInfo.getDefaultInstance())){
 
          retVal = new StringBuilder().
                              append("********Begin logging LockInfo********\n").
@@ -218,7 +220,7 @@ public class GrObjToString {
 
       String retVal = "LockInfo List == null";
 
-      if(liList != null){
+      if(liList != null && !liList.isEmpty()){
       
          StringBuilder strVal = new StringBuilder().
          append("********Begin logging LockInfo List********\n");
@@ -237,7 +239,7 @@ public class GrObjToString {
 
       String retVal = "Thread == null";
 
-      if(thread != null){
+      if(thread != null && !thread.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.Thread.getDefaultInstance())){
       
          StringBuilder strVal = new StringBuilder();
          
@@ -246,7 +248,7 @@ public class GrObjToString {
             append(MessageFormat.format("Thread getName() --> {0}\n", thread.getName())).
             append(MessageFormat.format("Thread getState() --> {0}\n", thread.getState())).
             append(MessageFormat.format("Thread getId() --> {0}\n", thread.getId())).
-            //append(MessageFormat.format("Thread getDescriptor() --> {0}", Thread.getDescriptor())).
+            append(MessageFormat.format("Thread getDescriptor() --> {0}", Thread.getDescriptor())).
             append(CoreProtoToString.GeneratedMessageV3ToString(thread)).
             append(MessageFormat.format("Thread lockOwnerId() --> {0}\n", thread.getLockOwnerId())).        
             append(MessageFormat.format("Thread getLockName() --> {0}\n", thread.getLockName())).
@@ -266,7 +268,7 @@ public class GrObjToString {
 
       String retVal = "Thread List == null";
       
-      if(tList != null){
+      if(tList != null && !tList.isEmpty()){
 
          StringBuilder strVal = new StringBuilder();
          strVal.append("********Begin logging Thread List********\n");
@@ -284,7 +286,7 @@ public class GrObjToString {
       
       String retVal = "Transaction == null";
       
-      if(transaction != null){
+      if(transaction != null && !transaction.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.Transaction.getDefaultInstance())){
 
          Descriptor descriptor = transaction.getDescriptorForType();
          String unQualifiedFieldName = descriptor.getName();
@@ -313,7 +315,7 @@ public class GrObjToString {
 
       String retVal = "Transaction List == null";
 
-      if(tList != null){
+      if(tList != null && !tList.isEmpty()){
          StringBuilder strVal = new StringBuilder();
          strVal.append("********Begin logging Transaction List********\n");
          for(Transaction transaction : tList){
@@ -329,7 +331,7 @@ public class GrObjToString {
 
       String retVal = "Thread Dump == null";
 
-      if(td != null){
+      if(td != null && !td.equals(org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump.getDefaultInstance())){
 
             Descriptor descriptor = td.getDescriptorForType();
             String unQualifiedFieldName = descriptor.getName();
@@ -359,18 +361,18 @@ public class GrObjToString {
 
   
 
-   // public static String ExceptionToString(Throwable t){
+   public static String ExceptionToString(Throwable t){
 
-   //    String retVal = null;
+      String retVal = " ";
       
-   //    if (t != null & t.getStackTrace() != null) {
-   //       final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-   //       PrintStream ps = new PrintStream(baos);
-   //       t.printStackTrace(ps);
-   //       retVal = new String(baos.toByteArray());
-   //    }
+      if (t != null & t.getStackTrace() != null) {
+         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         PrintStream ps = new PrintStream(baos);
+         t.printStackTrace(ps);
+         retVal = new String(baos.toByteArray());
+      }
 
-   //    return retVal;
-   // }
+      return retVal;
+   }
 
 }
